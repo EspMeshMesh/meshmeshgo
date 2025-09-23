@@ -17,6 +17,10 @@ WORKDIR /root/
 
 COPY --from=builder /app/meshmeshgo .
 
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
+
 EXPOSE 4040
 
-CMD ["./meshmeshgo"]
+# CMD ["./meshmeshgo"]
+CMD ["./docker-entrypoint.sh"]
