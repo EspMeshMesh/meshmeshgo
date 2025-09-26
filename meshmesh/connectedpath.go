@@ -161,6 +161,13 @@ func (client *ConnPathConnection) OpenConnectionAsync(addr MeshNodeId, port uint
 }
 
 func (client *ConnPathConnection) Disconnect() {
+
+	// Only send disconnect request if the coordinator connection is active
+	if client.connState != connPathConnectionStateActive {
+		return
+	}
+
+	logger.WithFields(logger.Fields{"handle": client.handle, "connState": client.connState}).Debug("Sending Disconnect request")
 	client.serial.SendApi(ConnectedPathApiRequest{
 		Protocol: meshmeshProtocolConnectedPath,
 		Command:  connectedPathDisconnectRequest,
@@ -170,7 +177,6 @@ func (client *ConnPathConnection) Disconnect() {
 		DataSize: 0,
 		Data:     []byte{},
 	})
-	logger.WithField("handle", client.handle).Debug("Sent Disconnect request")
 	client.connState = connPathConnectionStateInvalid
 }
 

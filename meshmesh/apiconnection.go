@@ -87,11 +87,11 @@ func (client *ApiConnection) SetClosedCallback(cb func(client NetworkConnection)
 func (client *ApiConnection) Close() {
 	client.socketOpen = false
 	client.socket.Close()
-	utils.ForceDebug(client.debugThisNode, "Waiting for read go-routine to terminate...")
 	client.socketWaitGroup.Wait()
 	client.Stats.Stop()
 	client.meshprotocol.Disconnect()
 	client.clientClosed(client)
+	logger.Log().Debug("ApiConnection.Close")
 }
 
 func (client *ApiConnection) CheckTimeout() {
@@ -132,13 +132,18 @@ func (client *ApiConnection) Read() {
 					Error(fmt.Errorf("readed data while in wrong connection state %d", client.meshprotocol.connState))
 			}
 		} else {
-			logger.WithFields(logger.Fields{"handle": client.meshprotocol.handle, "err": err}).Warn("ApiConnection.Read exit with error")
+			if errors.Is(err, net.ErrClosed) {
+				// Log other errors than net.ErrClosed
+			} else {
+				logger.WithFields(logger.Fields{"handle": client.meshprotocol.handle, "err": err}).Error("ApiConnection.Read exit with error")
+			}
 			break
 		}
 	}
 
 	client.socketWaitGroup.Done()
 	if client.socketOpen {
+		logger.Log().Debug("ApiConnection.Read close socket endpoint")
 		client.Close()
 	}
 }

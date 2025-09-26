@@ -77,7 +77,7 @@ func (client *OtaConnection) SetClosedCallback(cb func(client NetworkConnection)
 func (client *OtaConnection) Close() {
 	client.socketOpen = false
 	client.socket.Close()
-	utils.ForceDebug(client.debugThisNode, "Waiting for read go-routine to terminate...")
+	logger.Log().Debug("OtaConnection.Close close socket endpoint")
 	client.socketWaitGroup.Wait()
 	client.Stats.Stop()
 	client.meshprotocol.Disconnect()

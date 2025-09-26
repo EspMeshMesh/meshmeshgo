@@ -51,14 +51,6 @@ func FmtPath2Str(path []int64) string {
 	return _path
 }
 
-func ForceDebug(force bool, data interface{}) {
-	/*var level logrus.Level = logrus.DebugLevel
-	if force {
-		level = logrus.InfoLevel
-	}
-	logrus.(level, data)*/
-}
-
 func ForceDebugEntry(entry *logrus.Entry, force bool, data interface{}) {
 	var level logrus.Level = logrus.DebugLevel
 	if force {
