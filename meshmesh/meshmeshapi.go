@@ -255,7 +255,7 @@ func (serialConn *SerialConnection) Read() {
 				if b == stopLogMsg {
 					destination := make([]byte, inputBufferPos)
 					copy(destination, inputBuffer)
-					fmt.Println("==> "+string(destination))
+					fmt.Println("==> " + string(destination))
 					decodeState = waitStartByte
 				} else {
 					inputBuffer[inputBufferPos] = b
@@ -294,6 +294,7 @@ func (serialConn *SerialConnection) Read() {
 
 	serialConn.connected = false
 	serialConn.port.Close()
+	logger.Log().Info("SerialConnection.Read terminated")
 }
 
 func (serialConn *SerialConnection) Write() {
@@ -365,6 +366,7 @@ func (serialConn *SerialConnection) Write() {
 
 	serialConn.connected = false
 	serialConn.port.Close()
+	logger.Log().Info("SerialConnection.Write terminated")
 }
 
 func (serialConn *SerialConnection) QueueApiSession(session *SerialSession) {
