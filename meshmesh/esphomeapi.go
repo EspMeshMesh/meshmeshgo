@@ -283,13 +283,14 @@ func NewMultiServerApi(serial *SerialConnection, config ServerApiConfig) *MultiS
 	multisrv := MultiServerApi{serial: serial, espApiStats: _allStats, config: config}
 	SendClearConnections(serial)
 	multisrv.serial.ConnPathFn = multisrv.HandleConnectedPathReply
+	localNode := serial.LocalNode
 
 	nodes := graph.GetMainNetwork().Nodes()
 	graph.AddMainNetworkChangedCallback(multisrv.MainNetworkChanged)
 
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
-		if node.Device().InUse() {
+		if node.Device().InUse() && node.ID() != int64(localNode) {
 			configApi := config
 			configApi.RemotePort = fixedApiRemotePort
 
