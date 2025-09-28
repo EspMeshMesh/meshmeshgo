@@ -8,9 +8,20 @@ on:
       - 'v*'
 #  pull_request:
 
+env:
+  IMAGE_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,25 +30,26 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: persuader72/meshmeshgo
+          images: ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}
+          #images: persuader72/meshmeshgo
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
+          registry: ${{ env.IMAGE_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          #username: ${{ vars.DOCKER_USERNAME }}
+          #password: ${{ secrets.DOCKER_PASSWORD }}
+     
       - name: Build and push Docker image
+        id: push
         uses: docker/build-push-action@v6
         with:
+          context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          provenance: true
-          sbom: true
+          labels: ${{ steps.meta.outputs.labels }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -49,3 +61,11 @@ jobs:
         run: bunx changelogithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate artifact attestation
+        id: attest
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
