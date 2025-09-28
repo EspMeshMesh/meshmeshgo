@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/path"
 	"gonum.org/v1/gonum/graph/simple"
 	"leguru.net/m/v2/logger"
@@ -59,6 +60,13 @@ func (n NodeDevice) Device() *Device {
 	return n.device
 }
 
+func (n NodeDevice) DeviceTagOrFormattedId() string {
+	if n.device != nil && n.device.tag != "" {
+		return n.device.tag
+	}
+	return utils.FmtNodeId(n.id)
+}
+
 func (n NodeDevice) CopyDevice() NodeDevice {
 	return NodeDevice{id: n.id, device: n.device}
 }
@@ -104,6 +112,10 @@ type Network struct {
 
 func (g *Network) LocalDeviceId() int64 {
 	return g.localDeviceId
+}
+
+func (g *Network) IsLocalDevice(node graph.Node) bool {
+	return g.localDeviceId == node.ID()
 }
 
 func (g *Network) GetNodeDevice(id int64) (NodeDevice, error) {

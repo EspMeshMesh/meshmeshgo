@@ -90,6 +90,7 @@ func initConfig() *config.Config {
 }
 
 func networkChangedCallback() {
+	setupMdns()
 	gra.GetMainNetwork().SaveToFile(graphFilename)
 }
 
@@ -182,6 +183,15 @@ func main() {
 	// Init network graph
 	gra.SetMainNetwork(initNetwork(int64(serialPort.LocalNode)))
 	gra.AddMainNetworkChangedCallback(networkChangedCallback)
+	// Zeroconf and mdns setup
+	setMdnsConfig(MdnsServiceConfig{
+		zeroconfEnabled: config.EnableZeroconf,
+		dynmicAddress:   config.BindAddress == "dynamic" || config.BindAddress == "",
+		apiPort:         config.BindPort,
+		apiBasePort:     config.BasePortOffset,
+		apiPortsSpan:    config.SizeOfPortsPool,
+	})
+	setupMdns()
 	// Init node for spcific debug
 	initDebugNode(config)
 	gra.PrintTable(gra.GetMainNetwork())

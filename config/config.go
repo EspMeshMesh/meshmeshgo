@@ -2,8 +2,8 @@ package config
 
 import (
 	"encoding/json"
-	"os"
 	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v2"
 	"leguru.net/m/v2/logger"
@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	WantHelp           bool
-	ConfigFile		   string
+	ConfigFile         string
 	SerialPortName     string `json:"SerialPortName"`
 	SerialPortBaudRate int    `json:"SerialPortBaudRate"`
 	SerialIsEsp8266    bool   `json:"SerialIsEsp8266"`
@@ -24,22 +24,23 @@ type Config struct {
 	BindPort           int    `json:"BindPort"`
 	BasePortOffset     int    `json:"BasePortOffset"`
 	SizeOfPortsPool    int    `json:"SizeOfPortsPool"`
+	EnableZeroconf     bool   `json:"EnableZeroconf"`
 }
-
 
 func NewConfig() (*Config, error) {
 	var err error
 	config := Config{
-		WantHelp:        true,
-		VerboseLevel:    0,
-		RestBindAddress: ":4040",
-		BindAddress:     "dynamic",
-		BindPort:        6053,
-		BasePortOffset:  20000,
-		SizeOfPortsPool: 10000,
-		ConfigFile: "meshmeshgo.json",
-		SerialPortName: "/dev/ttyUSB0",
+		WantHelp:           true,
+		VerboseLevel:       0,
+		RestBindAddress:    ":4040",
+		BindAddress:        "dynamic",
+		BindPort:           6053,
+		BasePortOffset:     20000,
+		SizeOfPortsPool:    10000,
+		ConfigFile:         "meshmeshgo.json",
+		SerialPortName:     "/dev/ttyUSB0",
 		SerialPortBaudRate: 460800,
+		EnableZeroconf:     false,
 	}
 
 	app := &cli.App{
@@ -120,10 +121,10 @@ func NewConfig() (*Config, error) {
 				Destination: &config.SizeOfPortsPool,
 			},
 			&cli.StringFlag{
-				Name:    "config",
-				Aliases: []string{"c"},
-				Value:         config.ConfigFile,
-				Destination:   &config.ConfigFile,
+				Name:        "config",
+				Aliases:     []string{"c"},
+				Value:       config.ConfigFile,
+				Destination: &config.ConfigFile,
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
@@ -138,11 +139,11 @@ func NewConfig() (*Config, error) {
 
 	if _, err = os.Stat(config.ConfigFile); err == nil {
 		data, err := os.ReadFile(config.ConfigFile)
-		fmt.Println("Data: "+string(data))
+		fmt.Println("Data: " + string(data))
 		if err == nil {
-		  json.Unmarshal(data, &config)
+			json.Unmarshal(data, &config)
 		}
-    }
+	}
 	if err != nil {
 		res2B, _ := json.MarshalIndent(&config, "", "  ")
 		fmt.Println(string(res2B))

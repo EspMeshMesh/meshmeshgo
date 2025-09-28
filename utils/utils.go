@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -38,6 +39,10 @@ func ParseNodeId(id any) (int64, error) {
 
 func FmtNodeIdHass(nodeid int64) string {
 	return fmt.Sprintf("127.%d.%d.%d", (nodeid>>16)&0xFF, (nodeid>>8)&0xFF, nodeid&0xFF)
+}
+
+func ToIPv4(ip int64) net.IP {
+	return net.IPv4(127, byte((ip>>16)&0xFF), byte((ip>>8)&0xFF), byte(ip&0xFF))
 }
 
 func FmtPath2Str(path []int64) string {
@@ -98,4 +103,21 @@ func BackupFile(filename string, backupdir string) {
 	if _, err := os.Stat(filename); err == nil {
 		os.Rename(filename, filepath.Join(backupdir, backupfile))
 	}
+}
+
+func ComputeNodePort(nodeid int64, port int, base int, span int) int {
+	if port > 0 {
+		return port
+	}
+	return HashString(FmtNodeId(nodeid), span) + base
+}
+
+func ToFQDN(tag string, domain string) string {
+	if tag == "" {
+		tag = "unknow"
+	}
+	str := strings.ToLower(tag)
+	str = strings.Replace(str, " ", "_", -1)
+	str = strings.Replace(str, ".", "_", -1)
+	return str + "." + domain + "."
 }
