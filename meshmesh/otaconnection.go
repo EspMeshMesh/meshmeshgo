@@ -17,33 +17,6 @@ type OtaConnection struct {
 	NetworkConnectionStruct
 }
 
-func (client *OtaConnection) startHandshake(addr MeshNodeId, port int) error {
-	client.reqAddress = addr
-	client.reqPort = port
-	err := client.meshprotocol.OpenConnectionAsync(addr, uint16(port))
-	if err == nil {
-		client.Stats.Start()
-		if addr == MeshNodeId(0) {
-			client.debugThisNode = true
-			logger.WithFields(logger.Fields{"id": fmt.Sprintf("%02X", addr)}).Info("startHandshake and debug for node")
-		}
-	}
-	return err
-}
-
-func (client *OtaConnection) FinishHandshake(result bool) {
-	logger.WithField("res", result).Debug("OtaConnection.FinishHandshake")
-	if !result {
-		logger.WithFields(logger.Fields{"addr": client.reqAddress, "port": client.reqPort, "err": nil}).
-			Warning("OtaConnection.FinishHandshake failed")
-	} else {
-		logger.WithFields(logger.Fields{"addr": client.reqAddress, "port": client.reqPort, "handle": client.meshprotocol.handle}).
-			Info("OtaConnection.FinishHandshake OpenConnection succesfull")
-		client.flushBuffer(client.tmpBuffer)
-		client.Stats.GotHandle(client.meshprotocol.handle)
-	}
-}
-
 func (client *OtaConnection) flushBuffer(buffer *bytes.Buffer) {
 	if buffer.Len() > 0 {
 		logger.WithFields(logger.Fields{"handle": client.meshprotocol.handle, "len": buffer.Len()}).

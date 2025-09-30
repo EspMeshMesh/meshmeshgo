@@ -44,33 +44,6 @@ func (client *ApiConnection) forward(lastbyte byte) {
 	}
 }
 
-func (client *ApiConnection) startHandshake(addr MeshNodeId, port int) error {
-	client.reqAddress = addr
-	client.reqPort = port
-	err := client.meshprotocol.OpenConnectionAsync(addr, uint16(port))
-	if err == nil {
-		client.Stats.Start()
-		if addr == MeshNodeId(0) {
-			client.debugThisNode = true
-			logger.WithFields(logger.Fields{"id": fmt.Sprintf("%02X", addr)}).Info("startHandshake and debug for node")
-		}
-	}
-	return err
-}
-
-func (client *ApiConnection) FinishHandshake(result bool) {
-	logger.WithField("res", result).Debug("finishHandshake")
-	if !result {
-		logger.WithFields(logger.Fields{"addr": client.reqAddress, "port": client.reqPort, "err": nil}).
-			Warning("ApiConnection.finishHandshake failed")
-	} else {
-		logger.WithFields(logger.Fields{"addr": client.reqAddress, "port": client.reqPort, "handle": client.meshprotocol.handle}).
-			Info("ApiConnection.handshake OpenConnection succesfull")
-		client.flushBuffer()
-		client.Stats.GotHandle(client.meshprotocol.handle)
-	}
-}
-
 func (client *ApiConnection) flushBuffer() {
 	if client.tmpBuffer.Len() > 0 {
 		_b := client.tmpBuffer.Bytes()
@@ -168,6 +141,10 @@ func (client *ApiConnection) ForwardData(data []byte) error {
 }
 
 func NewApiConnection(socket net.Conn, serial *SerialConnection, addr MeshNodeId, port int, closedCb func(NetworkConnection)) (*ApiConnection, error) {
+	if !serial.IsConnected() {
+		return nil, errors.New("serial is not open")
+	}
+
 	client := &ApiConnection{
 		NetworkConnectionStruct: NewNetworkConnectionStruct(socket, serial, addr, port, closedCb),
 	}

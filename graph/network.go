@@ -110,6 +110,18 @@ type Network struct {
 	localDeviceId int64
 }
 
+func (g *Network) LocalDeviceIdChanged(nodeId int64) {
+	if g.localDeviceId == nodeId {
+		return
+	}
+	g.localDeviceId = nodeId
+	if nodeId > 0 && !g.NodeIdExists(nodeId) {
+		g.AddNode(NewNodeDevice(nodeId, true, "local"))
+		logger.WithField("device", utils.FmtNodeId(nodeId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
+	}
+	NotifyMainNetworkChanged()
+}
+
 func (g *Network) LocalDeviceId() int64 {
 	return g.localDeviceId
 }
@@ -221,20 +233,21 @@ func (g *Network) CopyNetwork() *Network {
 func NewNetwork(localDeviceId int64) *Network {
 	network := Network{localDeviceId: localDeviceId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
-	network.AddNode(NewNodeDevice(localDeviceId, true, "local"))
+	if localDeviceId > 0 {
+		network.AddNode(NewNodeDevice(localDeviceId, true, "local"))
+	}
 	return &network
 }
 
 func NewNeworkFromFile(filename string, localDeviceId int64) (*Network, error) {
-	network := Network{}
+	network := Network{localDeviceId: localDeviceId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
 	err := network.readGraph(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	network.localDeviceId = localDeviceId
-	if !network.NodeIdExists(localDeviceId) {
+	if localDeviceId > 0 && !network.NodeIdExists(localDeviceId) {
 		network.AddNode(NewNodeDevice(localDeviceId, true, "local"))
 		logger.WithField("device", utils.FmtNodeId(localDeviceId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
 	}

@@ -147,6 +147,11 @@ func handleDiscAssociateReply(v *meshmesh.DiscAssociateApiReply, serialPort *mes
 	// ***** TODO: Update network graph with new node
 }
 
+/* Serial coordinator node id changed callback */
+func localNodeIdChangedCallback(meshNodeId meshmesh.MeshNodeId) {
+	gra.GetMainNetwork().LocalDeviceIdChanged(int64(meshNodeId))
+}
+
 // @title           Meshmesh API
 // @version         1.0.0
 // @description     Meshmesh API documents https://github.com/EspMeshMesh/meshmeshgo
@@ -174,15 +179,18 @@ func main() {
 	config := initConfig()
 
 	logger.WithFields(logger.Fields{"portName": config.SerialPortName, "baudRate": config.SerialPortBaudRate}).Debug("Opening serial port")
-	// First init serial connection with coordinator
 
+	// First init serial connection with coordinator
 	serialPort, err := meshmesh.NewSerial(config.SerialPortName, config.SerialPortBaudRate, config.SerialIsEsp8266, false)
 	if err != nil {
 		logger.Log().Fatal("Serial port error: ", err)
 	}
+	serialPort.SetLocalNodeIdChangedCb(localNodeIdChangedCallback)
+
 	// Init network graph
 	gra.SetMainNetwork(initNetwork(int64(serialPort.LocalNode)))
 	gra.AddMainNetworkChangedCallback(networkChangedCallback)
+
 	// Zeroconf and mdns setup
 	setMdnsConfig(MdnsServiceConfig{
 		zeroconfEnabled: config.EnableZeroconf,
@@ -197,6 +205,7 @@ func main() {
 	gra.PrintTable(gra.GetMainNetwork())
 	// Handle DiscAssociateReply received from other nodes
 	serialPort.DiscAssociateFn = handleDiscAssociateReply
+
 	// Initialize Esphome to HomeAssistant Server
 	esphomeapi := meshmesh.NewMultiServerApi(serialPort, meshmesh.ServerApiConfig{
 		BindAddress:     config.BindAddress,
@@ -204,10 +213,12 @@ func main() {
 		BasePortOffset:  config.BasePortOffset,
 		SizeOfPortsPool: config.SizeOfPortsPool,
 	})
+
 	// Start RPC Server
 	rpcServer := rpc.NewRpcServer(config.RpcBindAddress)
 	rpcServer.Start(fmt.Sprintf("%s - %s", programName, programDescription), fmt.Sprintf("%s - %s", vcsHash, vcsTime.Format(time.RFC3339)), serialPort)
 	defer rpcServer.Stop()
+
 	// Start rest server
 	restHandler := rest.NewHandler(serialPort, esphomeapi)
 	rest.StartRestServer(rest.NewRouter(restHandler), config.RestBindAddress)
@@ -218,8 +229,8 @@ func main() {
 		if quitProgram {
 			break
 		}
-		if !serialPort.IsConnected() {
-			break
+		if serialPort.IsConnected() {
+			serialPort.TryReconnect()
 		}
 		if time.Since(lastStatsTime) > 1*time.Minute {
 			lastStatsTime = time.Now()

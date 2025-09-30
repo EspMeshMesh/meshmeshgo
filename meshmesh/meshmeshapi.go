@@ -50,19 +50,23 @@ func NewSerialSession(request *ApiFrame) (*SerialSession, error) {
 }
 
 type SerialConnection struct {
-	connected       bool
-	port            serial.Port
-	isEsp8266       bool
-	txOneByteMs     int
-	debug           bool
-	incoming        chan []byte
-	session         *SerialSession
-	Sessions        *list.List
-	SessionsLock    sync.Mutex
-	NextHandle      uint16
-	LocalNode       uint32
-	ConnPathFn      func(*ConnectedPathApiReply)
-	DiscAssociateFn func(*DiscAssociateApiReply, *SerialConnection)
+	isPortOpen           bool
+	port                 serial.Port
+	portName             string
+	baudRate             int
+	isEsp8266            bool
+	txOneByteMs          int
+	debug                bool
+	incoming             chan []byte
+	session              *SerialSession
+	Sessions             *list.List
+	SessionsLock         sync.Mutex
+	NextHandle           uint16
+	LocalNode            uint32
+	ConnPathFn           func(*ConnectedPathApiReply)
+	DiscAssociateFn      func(*DiscAssociateApiReply, *SerialConnection)
+	localNodeIdChangedCb func(meshNodeId MeshNodeId)
+	lastUseTime          time.Time
 }
 
 const (
@@ -75,7 +79,13 @@ const (
 )
 
 func (serialConn *SerialConnection) IsConnected() bool {
-	return serialConn.connected
+	return serialConn.isPortOpen
+}
+
+func (serialConn *SerialConnection) TryReconnect() {
+	if time.Since(serialConn.lastUseTime).Seconds() > 10 {
+		serialConn.openPort()
+	}
 }
 
 func (serialConn *SerialConnection) GetNextHandle() uint16 {
@@ -173,7 +183,7 @@ func (serialConn *SerialConnection) Read() {
 	var decodeState int = waitStartByte
 	serialConn.port.ResetInputBuffer()
 
-	for {
+	for serialConn.isPortOpen {
 		var buffer = make([]byte, 1)
 		// Read a byte from serial with a timout of a time slot
 		serialConn.port.SetReadTimeout(50 * time.Millisecond)
@@ -292,13 +302,15 @@ func (serialConn *SerialConnection) Read() {
 		}
 	}
 
-	serialConn.connected = false
-	serialConn.port.Close()
-	logger.Log().Info("SerialConnection.Read terminated")
+	if serialConn.isPortOpen {
+		serialConn.closePort()
+	}
+
+	logger.Log().Warn("SerialConnection.Read go routine terminated")
 }
 
 func (serialConn *SerialConnection) Write() {
-	for {
+	for serialConn.isPortOpen {
 		// If we are idle
 		if serialConn.session == nil {
 			// And there is not more work to do
@@ -364,9 +376,11 @@ func (serialConn *SerialConnection) Write() {
 		}
 	}
 
-	serialConn.connected = false
-	serialConn.port.Close()
-	logger.Log().Info("SerialConnection.Write terminated")
+	if serialConn.isPortOpen {
+		serialConn.closePort()
+	}
+
+	logger.Log().Warn("SerialConnection.Write go routine terminated")
 }
 
 func (serialConn *SerialConnection) QueueApiSession(session *SerialSession) {
@@ -375,7 +389,11 @@ func (serialConn *SerialConnection) QueueApiSession(session *SerialSession) {
 	serialConn.SessionsLock.Unlock()
 }
 
-func (serialConn *SerialConnection) SendApi(cmd interface{}) error {
+func (serialConn *SerialConnection) SendApi(cmd any) error {
+	if !serialConn.isPortOpen {
+		return errors.New("port is not open")
+	}
+
 	frame, err := NewApiFrameFromStruct(cmd, DirectProtocol, 0, nil)
 	if err != nil {
 		return err
@@ -386,7 +404,11 @@ func (serialConn *SerialConnection) SendApi(cmd interface{}) error {
 	return nil
 }
 
-func (serialConn *SerialConnection) sendReceiveApiProt(session *SerialSession) (interface{}, error) {
+func (serialConn *SerialConnection) sendReceiveApiProt(session *SerialSession) (any, error) {
+	if !serialConn.isPortOpen {
+		return nil, errors.New("port is not open")
+	}
+
 	if session.IsAwaitable() {
 		session.Wait.Add(1)
 	}
@@ -441,67 +463,106 @@ func (serialConn *SerialConnection) SendReceiveApi(cmd interface{}) (interface{}
 	return serialConn.SendReceiveApiProt(cmd, DirectProtocol, 0, nil)
 }
 
-func NewSerial(portName string, baudRate int, isEsp8266 bool, debug bool) (*SerialConnection, error) {
-	mode := &serial.Mode{BaudRate: baudRate}
-	p, err := serial.Open(portName, mode)
-	if err != nil {
-		return nil, err
+func (serialConn *SerialConnection) closePort() error {
+	if !serialConn.isPortOpen {
+		logger.Log().Info("SerialConnection.Close: port is not open")
+		return errors.New("port is not open")
 	}
 
+	err := serialConn.port.Close()
+	serialConn.lastUseTime = time.Now()
+	serialConn.isPortOpen = false
+	serialConn.LocalNode = 0
+	return err
+}
+
+func (serialConn *SerialConnection) SetLocalNodeIdChangedCb(cb func(meshNodeId MeshNodeId)) {
+	serialConn.localNodeIdChangedCb = cb
+}
+
+func (serialConn *SerialConnection) openPort() error {
+	if serialConn.isPortOpen {
+		logger.Log().Info("SerialConnection.openPort: port already open")
+		return errors.New("port already open")
+	}
+
+	var err error
+	mode := &serial.Mode{BaudRate: serialConn.baudRate}
+	serialConn.port, err = serial.Open(serialConn.portName, mode)
+	if err != nil {
+		return err
+	}
+
+	serialConn.isPortOpen = true
+
+	go serialConn.Write()
+	go serialConn.Read()
+
+	reply1, err := serialConn.SendReceiveApi(EchoApiRequest{Echo: "CIAO"})
+	if err != nil {
+		serialConn.closePort()
+		return err
+	}
+	echo, ok := reply1.(EchoApiReply)
+	if !ok {
+		serialConn.closePort()
+		return errors.New("invalid echo reply type")
+	}
+	if echo.Echo != "CIAO" {
+		serialConn.closePort()
+		return errors.New("invalid echo reply")
+	}
+
+	reply2, err := serialConn.SendReceiveApi(NodeIdApiRequest{})
+	if err != nil {
+		serialConn.closePort()
+		return err
+	}
+
+	nodeid, ok := reply2.(NodeIdApiReply)
+	if !ok {
+		serialConn.closePort()
+		return errors.New("invalid nodeid reply")
+	}
+
+	reply3, err := serialConn.SendReceiveApi(FirmRevApiRequest{})
+	if err != nil {
+		serialConn.closePort()
+		return err
+	}
+	firmrev, ok := reply3.(FirmRevApiReply)
+	if !ok {
+		serialConn.closePort()
+		return errors.New("invalid firmware reply")
+	}
+
+	if serialConn.LocalNode != uint32(nodeid.Serial) {
+		if serialConn.localNodeIdChangedCb != nil {
+			serialConn.localNodeIdChangedCb(nodeid.Serial)
+		}
+	}
+
+	serialConn.LocalNode = uint32(nodeid.Serial)
+	logger.Log().WithFields(logrus.Fields{"nodeId": fmt.Sprintf("0x%06X", serialConn.LocalNode), "firmware": firmrev.Revision}).
+		Info("Valid local node found")
+
+	return nil
+}
+
+func NewSerial(portName string, baudRate int, isEsp8266 bool, debug bool) (*SerialConnection, error) {
 	serial := &SerialConnection{
-		connected:   true,
-		port:        p,
+		isPortOpen:  false,
+		port:        nil,
+		portName:    portName,
+		baudRate:    baudRate,
 		isEsp8266:   isEsp8266,
 		txOneByteMs: int(float32(8) / float32(baudRate) * 1000000.0),
 		debug:       debug,
 		incoming:    make(chan []byte),
 		Sessions:    list.New(),
 		NextHandle:  1,
+		lastUseTime: time.Now(),
 	}
 
-	go serial.Write()
-	go serial.Read()
-
-	reply1, err := serial.SendReceiveApi(EchoApiRequest{Echo: "CIAO"})
-	if err != nil {
-		serial.port.Close()
-		return nil, err
-	}
-	echo, ok := reply1.(EchoApiReply)
-	if !ok {
-		serial.port.Close()
-		return nil, errors.New("invalid echo reply type")
-	}
-	if echo.Echo != "CIAO" {
-		serial.port.Close()
-		return nil, errors.New("invalid echo reply")
-	}
-
-	reply2, err := serial.SendReceiveApi(NodeIdApiRequest{})
-	if err != nil {
-		serial.port.Close()
-		return nil, err
-	}
-
-	nodeid, ok := reply2.(NodeIdApiReply)
-	if !ok {
-		serial.port.Close()
-		return nil, errors.New("invalid nodeid reply")
-	}
-
-	reply3, err := serial.SendReceiveApi(FirmRevApiRequest{})
-	if err != nil {
-		serial.port.Close()
-		return nil, err
-	}
-	firmrev, ok := reply3.(FirmRevApiReply)
-	if !ok {
-		serial.port.Close()
-		return nil, errors.New("invalid firmware reply")
-	}
-
-	serial.LocalNode = uint32(nodeid.Serial)
-	logger.Log().WithFields(logrus.Fields{"nodeId": fmt.Sprintf("0x%06X", serial.LocalNode), "firmware": firmrev.Revision}).
-		Info("Valid local node found")
-	return serial, nil
+	return serial, serial.openPort()
 }

@@ -53,6 +53,59 @@ func (c *NetworkConnectionStruct) MeshProtocol() *ConnPathConnection {
 	return c.meshprotocol
 }
 
+func (c *NetworkConnectionStruct) startHandshake(addr MeshNodeId, port int) error {
+	c.reqAddress = addr
+	c.reqPort = port
+	err := c.meshprotocol.OpenConnectionAsync(addr, uint16(port))
+	if err == nil {
+		c.Stats.Start()
+		if addr == MeshNodeId(0) {
+			c.debugThisNode = true
+			logger.WithFields(logger.Fields{"id": fmt.Sprintf("%02X", addr)}).Info("startHandshake and debug for node")
+		}
+	}
+	return err
+}
+
+func (c *NetworkConnectionStruct) FinishHandshake(result bool) {
+	logger.WithField("res", result).Debug("finishHandshake")
+	if !result {
+		logger.WithFields(logger.Fields{"addr": c.reqAddress, "port": c.reqPort, "err": nil}).
+			Warning("ApiConnection.finishHandshake failed")
+	} else {
+		logger.WithFields(logger.Fields{"addr": c.reqAddress, "port": c.reqPort, "handle": c.meshprotocol.handle}).
+			Info("ApiConnection.handshake OpenConnection succesfull")
+		c.flushBuffer(c.tmpBuffer)
+		c.Stats.GotHandle(c.meshprotocol.handle)
+	}
+}
+
+func (c *NetworkConnectionStruct) flushBuffer(buffer *bytes.Buffer) {
+	if buffer.Len() > 0 {
+		logger.WithFields(logger.Fields{"handle": c.meshprotocol.handle, "len": buffer.Len()}).
+			Trace(fmt.Sprintf("flushBuffer: HA-->SE: %s", utils.EncodeToHexEllipsis(buffer.Bytes(), 32)))
+
+		chunks := (buffer.Len()-1)/512 + 1
+
+		for i := 0; i < chunks; i++ {
+			chunk := buffer.Next(512)
+			err := c.meshprotocol.SendData(chunk)
+			if err != nil {
+				logger.Log().Error(fmt.Sprintf("Error writing on socket: %s", err.Error()))
+			}
+			if c.meshprotocol.serial.isEsp8266 {
+				sleepTime := c.meshprotocol.serial.txOneByteMs * (len(chunk) * 25)
+				time.Sleep(time.Duration(sleepTime) * time.Microsecond)
+			}
+		}
+
+		//client.meshprotocol.SendData([]byte{})
+
+		c.Stats.SentBytes(buffer.Len())
+		buffer.Reset()
+	}
+}
+
 func NewNetworkConnectionStruct(socket net.Conn, serial *SerialConnection, addr MeshNodeId, port int, closedCb func(NetworkConnection)) NetworkConnectionStruct {
 	return NetworkConnectionStruct{
 		meshprotocol: NewConnPathConnection(serial),
