@@ -229,7 +229,7 @@ func main() {
 		if quitProgram {
 			break
 		}
-		if serialPort.IsConnected() {
+		if !serialPort.IsConnected() {
 			serialPort.TryReconnect()
 		}
 		if time.Since(lastStatsTime) > 1*time.Minute {
