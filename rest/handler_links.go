@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -125,7 +124,36 @@ func (h *Handler) getOneLink(c *gin.Context) {
 // @Failure 400 {object} string
 // @Router /api/links [post]
 func (h *Handler) createLink(c *gin.Context) {
-	_ = c.AbortWithError(http.StatusBadRequest, errors.New("not implemented"))
+	req := CreateLinkRequest{}
+	err := c.ShouldBindJSON(&req)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	network := graph.GetMainNetwork()
+	_, err = network.GetNodeDevice(req.From)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "From node not found"})
+		return
+	}
+	_, err = network.GetNodeDevice(req.To)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "To node not found"})
+		return
+	}
+
+	network.ChangeEdgeWeight(req.From, req.To, float64(req.Weight), float64(req.Weight))
+	graph.NotifyMainNetworkChanged()
+
+	edge := network.WeightedEdge(req.From, req.To)
+	if edge == nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Link not found"})
+		return
+	}
+
+	jsonLink := fillLinkStruct(edge)
+	c.JSON(http.StatusOK, jsonLink)
 }
 
 // @Id updateLink

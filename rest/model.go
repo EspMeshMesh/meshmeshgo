@@ -65,9 +65,17 @@ type MeshNode struct {
 	Flags    int                `json:"flags"`
 }
 
+type CreateLinkRequest struct {
+	From        int64   `json:"from"`
+	To          int64   `json:"to"`
+	Weight      float32 `json:"weight"`
+	Description string  `json:"description"`
+}
+
 type UpdateLinkRequest struct {
-	ID     uint    `json:"id"`
-	Weight float32 `json:"weight"`
+	ID          uint    `json:"id"`
+	Weight      float32 `json:"weight"`
+	Description string  `json:"description"`
 }
 
 type MeshLink struct {
