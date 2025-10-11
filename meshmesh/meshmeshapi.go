@@ -510,7 +510,14 @@ func (serialConn *SerialConnection) openPort() error {
 		logger.Log().Info("SerialConnection.openPort: port already open")
 		return errors.New("port already open")
 	}
-
+	
+	if serialConn.pulseResetOnOpen {
+		logger.Log().Info("SerialConnection.openPort: pulse reset started")
+		if err := serialConn.pulseReset(); err != nil {
+			logger.Log().WithError(err).Warn("SerialConnection.openPort: pulse reset failed")
+		}
+	}
+	
 	var err error
 	mode := &serial.Mode{BaudRate: serialConn.baudRate}
 	serialConn.port, err = serial.Open(serialConn.portName, mode)
@@ -519,12 +526,6 @@ func (serialConn *SerialConnection) openPort() error {
 	}
 
 	serialConn.isPortOpen = true
-
-	if serialConn.pulseResetOnOpen {
-		if err := serialConn.pulseReset(); err != nil {
-			logger.Log().WithError(err).Warn("SerialConnection.openPort: pulse reset failed")
-		}
-	}
 
 	go serialConn.Write()
 	go serialConn.Read()
