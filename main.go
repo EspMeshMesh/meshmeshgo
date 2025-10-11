@@ -181,7 +181,7 @@ func main() {
 	logger.WithFields(logger.Fields{"portName": config.SerialPortName, "baudRate": config.SerialPortBaudRate}).Debug("Opening serial port")
 
 	// First init serial connection with coordinator
-	serialPort, err := meshmesh.NewSerial(config.SerialPortName, config.SerialPortBaudRate, config.SerialIsEsp8266, false)
+	serialPort, err := meshmesh.NewSerial(config.SerialPortName, config.SerialPortBaudRate, config.SerialIsEsp8266, config.SerialResetOnInit, false)
 	if err != nil {
 		logger.Log().Fatal("Serial port error: ", err)
 	}
@@ -230,7 +230,11 @@ func main() {
 			break
 		}
 		if !serialPort.IsConnected() {
-			serialPort.TryReconnect()
+			if config.SerialShouldRetry {
+				serialPort.TryReconnect()
+			} else {
+				break
+			}
 		}
 		if time.Since(lastStatsTime) > 1*time.Minute {
 			lastStatsTime = time.Now()
