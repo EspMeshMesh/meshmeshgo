@@ -55,6 +55,7 @@ type SerialConnection struct {
 	portName             string
 	baudRate             int
 	isEsp8266            bool
+	pulseResetOnOpen     bool
 	txOneByteMs          int
 	debug                bool
 	incoming             chan []byte
@@ -480,6 +481,30 @@ func (serialConn *SerialConnection) SetLocalNodeIdChangedCb(cb func(meshNodeId M
 	serialConn.localNodeIdChangedCb = cb
 }
 
+func (serialConn *SerialConnection) pulseReset() error {
+	if serialConn.port == nil {
+		return nil
+	}
+
+	if err := serialConn.port.SetRTS(true); err != nil {
+		return err
+	}
+	if err := serialConn.port.SetDTR(false); err != nil {
+		return err
+	}
+	time.Sleep(100 * time.Millisecond)
+
+	if err := serialConn.port.SetRTS(false); err != nil {
+		return err
+	}
+	if err := serialConn.port.SetDTR(false); err != nil {
+		return err
+	}
+	time.Sleep(200 * time.Millisecond)
+
+	return nil
+}
+
 func (serialConn *SerialConnection) openPort() error {
 	if serialConn.isPortOpen {
 		logger.Log().Info("SerialConnection.openPort: port already open")
@@ -494,6 +519,12 @@ func (serialConn *SerialConnection) openPort() error {
 	}
 
 	serialConn.isPortOpen = true
+
+	if serialConn.pulseResetOnOpen {
+		if err := serialConn.pulseReset(); err != nil {
+			logger.Log().WithError(err).Warn("SerialConnection.openPort: pulse reset failed")
+		}
+	}
 
 	go serialConn.Write()
 	go serialConn.Read()
@@ -549,13 +580,14 @@ func (serialConn *SerialConnection) openPort() error {
 	return nil
 }
 
-func NewSerial(portName string, baudRate int, isEsp8266 bool, debug bool) (*SerialConnection, error) {
+func NewSerial(portName string, baudRate int, isEsp8266 bool, pulseResetOnOpen bool, debug bool) (*SerialConnection, error) {
 	serial := &SerialConnection{
 		isPortOpen:  false,
 		port:        nil,
 		portName:    portName,
 		baudRate:    baudRate,
 		isEsp8266:   isEsp8266,
+		pulseResetOnOpen: pulseResetOnOpen,
 		txOneByteMs: int(float32(8) / float32(baudRate) * 1000000.0),
 		debug:       debug,
 		incoming:    make(chan []byte),

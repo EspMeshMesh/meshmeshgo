@@ -16,6 +16,7 @@ type Config struct {
 	SerialPortBaudRate int    `json:"SerialPortBaudRate"`
 	SerialIsEsp8266    bool   `json:"SerialIsEsp8266"`
 	SerialShouldRetry  bool		`json:"SerialShouldRetry"`
+	SerialResetOnInit  bool		`json:"SerialResetOnInit"`
 	VerboseLevel       int    `json:"VerboseLevel"`
 	TargetNode         int    `json:"TargetNode"`
 	DebugNodeAddr      string `json:"DebugNodeAddr"`
@@ -42,6 +43,7 @@ func NewConfig() (*Config, error) {
 		SerialPortName:     "/dev/ttyUSB0",
 		SerialPortBaudRate: 460800,
 		SerialShouldRetry:  true,
+		SerialResetOnInit:	false,
 		EnableZeroconf:     false,
 	}
 
