@@ -15,6 +15,7 @@ type Config struct {
 	SerialPortName     string `json:"SerialPortName"`
 	SerialPortBaudRate int    `json:"SerialPortBaudRate"`
 	SerialIsEsp8266    bool   `json:"SerialIsEsp8266"`
+	SerialShouldRetry  bool		`json:"SerialShouldRetry"`
 	VerboseLevel       int    `json:"VerboseLevel"`
 	TargetNode         int    `json:"TargetNode"`
 	DebugNodeAddr      string `json:"DebugNodeAddr"`
@@ -40,6 +41,7 @@ func NewConfig() (*Config, error) {
 		ConfigFile:         "meshmeshgo.json",
 		SerialPortName:     "/dev/ttyUSB0",
 		SerialPortBaudRate: 460800,
+		SerialShouldRetry:  true,
 		EnableZeroconf:     false,
 	}
 

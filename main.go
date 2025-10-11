@@ -230,7 +230,11 @@ func main() {
 			break
 		}
 		if !serialPort.IsConnected() {
-			serialPort.TryReconnect()
+			if config.SerialShouldRetry {
+				serialPort.TryReconnect()
+			} else {
+				break
+			}
 		}
 		if time.Since(lastStatsTime) > 1*time.Minute {
 			lastStatsTime = time.Now()
