@@ -17,6 +17,7 @@ type Device struct {
 	inuse      bool
 	discovered bool
 	tag        string
+	firmware   string
 }
 
 func (d Device) InUse() bool {
@@ -41,6 +42,14 @@ func (d Device) Tag() string {
 
 func (d *Device) SetTag(tag string) {
 	d.tag = tag
+}
+
+func (d Device) Firmware() string {
+	return d.firmware
+}
+
+func (d *Device) SetFirmware(firmware string) {
+	d.firmware = firmware
 }
 
 func NewDevice(inuse bool, tag string) *Device {

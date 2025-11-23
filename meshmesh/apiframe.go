@@ -244,6 +244,17 @@ type LogEventApiReply struct {
 	Line  string     `struct:"string"`
 }
 
+const nodePresentstionApiReply uint8 = 65
+
+type NodePresentstionApiReply struct {
+	Id         uint8          `struct:"uint8"`
+	SourceAddr MeshNodeId     `struct:"uint32"`
+	TargetAddr MeshNodeId     `struct:"uint32"`
+	Repeaters  [16]MeshNodeId `struct:"[16]uint32"`
+	Rssi       [16]int16      `struct:"[16]int16"`
+	Hops       uint8          `struct:"uint8"`
+}
+
 const connectedUnicastRequest uint8 = 114
 
 type UnicastRequest struct {
@@ -595,6 +606,10 @@ func (frame *ApiFrame) Decode() (interface{}, error) {
 		if len(frame.data) > 7 {
 			v.Line = string(frame.data[7:])
 		}
+		return v, nil
+	case nodePresentstionApiReply:
+		v := NodePresentstionApiReply{}
+		restruct.Unpack(frame.data, binary.LittleEndian, &v)
 		return v, nil
 	case connectedPathApiReply:
 		v := ConnectedPathApiReply{}

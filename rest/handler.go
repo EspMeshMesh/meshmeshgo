@@ -15,6 +15,7 @@ type Handler struct {
 	discoveryProcedure      *mm.DiscoveryProcedure
 	firmwareUploadProcedure *mm.FirmwareUploadProcedure
 	esphomeServers          *mm.MultiServerApi
+	starPath                *mm.StarPath
 }
 
 func smartInteger(v any) int64 {
@@ -50,11 +51,12 @@ func routeFrontend(c *gin.Context) {
 	c.Writer.Header().Set("Location", "/manager")
 }
 
-func NewHandler(serialConn *mm.SerialConnection, esphomeServers *mm.MultiServerApi) *Handler {
+func NewHandler(serialConn *mm.SerialConnection, esphomeServers *mm.MultiServerApi, starPath *mm.StarPath) *Handler {
 	return &Handler{
 		serialConn:              serialConn,
 		discoveryProcedure:      nil,
 		firmwareUploadProcedure: nil,
 		esphomeServers:          esphomeServers,
+		starPath:                starPath,
 	}
 }

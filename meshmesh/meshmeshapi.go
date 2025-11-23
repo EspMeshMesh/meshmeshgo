@@ -65,6 +65,7 @@ type SerialConnection struct {
 	LocalNode            uint32
 	ConnPathFn           func(*ConnectedPathApiReply)
 	DiscAssociateFn      func(*DiscAssociateApiReply, *SerialConnection)
+	NodePresentstionFn   func(*NodePresentstionApiReply, *SerialConnection)
 	localNodeIdChangedCb func(meshNodeId MeshNodeId)
 	lastUseTime          time.Time
 }
@@ -149,6 +150,12 @@ func (serialConn *SerialConnection) ReadFrame(buffer []byte) {
 				if serialConn.DiscAssociateFn != nil {
 					serialConn.DiscAssociateFn(&vv, serialConn)
 				}
+			} else if frame.AssertType(nodePresentstionApiReply, 0) {
+				vv := NodePresentstionApiReply{}
+				restruct.Unpack(frame.data, binary.LittleEndian, &vv)
+				if serialConn.NodePresentstionFn != nil {
+					serialConn.NodePresentstionFn(&vv, serialConn)
+				}
 			} else {
 				logger.Log().WithField("type", fmt.Sprintf("%02X", buffer[0])).Error("Unused packet received")
 			}
@@ -189,6 +196,7 @@ func (serialConn *SerialConnection) Read() {
 		serialConn.port.SetReadTimeout(50 * time.Millisecond)
 		n, err := serialConn.port.Read(buffer)
 		if err != nil {
+			logger.Log().WithField("err", err).Warn("SerialConnection.Read: error reading from serial port")
 			break
 		}
 
@@ -303,6 +311,7 @@ func (serialConn *SerialConnection) Read() {
 	}
 
 	if serialConn.isPortOpen {
+		logger.Log().Warn("SerialConnection.Read: closing serial port")
 		serialConn.closePort()
 	}
 
@@ -469,6 +478,7 @@ func (serialConn *SerialConnection) closePort() error {
 		return errors.New("port is not open")
 	}
 
+	logger.Log().Trace("SerialConnection.Close: closing serial port")
 	err := serialConn.port.Close()
 	serialConn.lastUseTime = time.Now()
 	serialConn.isPortOpen = false

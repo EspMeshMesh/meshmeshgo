@@ -55,6 +55,8 @@ func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *g
 			err := h.nodeInfoGetCmd(&jsonNode)
 			if err != nil {
 				jsonNode.Error = err.Error()
+			} else {
+				dev.Device().SetFirmware(jsonNode.Revision)
 			}
 		}
 	}
@@ -92,6 +94,7 @@ func (h *Handler) getNodes(c *gin.Context) {
 			InUse:   dev.Device().InUse(),
 			Path:    graph.FmtNodePath(network, dev),
 			IsLocal: dev.ID() == network.LocalDeviceId(),
+			FirmRev: dev.Device().Firmware(),
 		})
 	}
 

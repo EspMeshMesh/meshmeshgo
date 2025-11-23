@@ -205,6 +205,7 @@ func main() {
 	gra.PrintTable(gra.GetMainNetwork())
 	// Handle DiscAssociateReply received from other nodes
 	serialPort.DiscAssociateFn = handleDiscAssociateReply
+	starPath := meshmesh.NewStarPath(serialPort)
 
 	// Initialize Esphome to HomeAssistant Server
 	esphomeapi := meshmesh.NewMultiServerApi(serialPort, meshmesh.ServerApiConfig{
@@ -220,7 +221,7 @@ func main() {
 	defer rpcServer.Stop()
 
 	// Start rest server
-	restHandler := rest.NewHandler(serialPort, esphomeapi)
+	restHandler := rest.NewHandler(serialPort, esphomeapi, starPath)
 	rest.StartRestServer(rest.NewRouter(restHandler), config.RestBindAddress)
 
 	var lastStatsTime time.Time

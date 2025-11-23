@@ -52,7 +52,11 @@ func (g *Network) readGraph(filename string) error {
 					}
 				}
 
-				g.AddNode(NewNodeDevice(id, inuse, descr))
+				firmware := attrs["firmware"].(string)
+
+				dev := NewNodeDevice(id, inuse, descr)
+				dev.Device().SetFirmware(firmware)
+				g.AddNode(dev)
 			}
 
 			for _, e := range gr.Edges {
@@ -113,6 +117,7 @@ func (g *Network) writeGraph(filename string) error {
 		attributes := map[string]interface{}{
 			"inuse":      node.Device().InUse(),
 			"discovered": node.Device().Discovered(),
+			"firmware":   node.Device().Firmware(),
 		}
 
 		gr.AddNode(attributes, utils.FmtNodeId(node.ID()), node.Device().Tag())
