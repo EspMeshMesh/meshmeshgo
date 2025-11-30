@@ -17,6 +17,7 @@ import { EspHomeServerList } from "./esphome/EspHomeServerList";
 import { EsphomeClientsList } from "./esphome/EsphomeClientsList";
 import { MeshAutoNodesList } from "./network/MeshAutoNodesList";
 import { MeshAutoLinksList } from "./network/MeshAutoLinksList";
+import { ShowGraph } from './showgraph/ShowGraph';
 
 export const App = () => (
     <Admin layout={Layout} dataProvider={dataProvider} title="Mesh Network">
@@ -29,6 +30,7 @@ export const App = () => (
         <Resource name="neighbors" />
         <CustomRoutes>
             <Route path="/discoverylive" element={<Discovery />} />
+            <Route path="/showgraph" element={<ShowGraph />} />
         </CustomRoutes>
     </Admin>
 );

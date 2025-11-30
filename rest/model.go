@@ -1,6 +1,9 @@
 package rest
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 type SortType int
 
@@ -19,6 +22,9 @@ const (
 	sortFieldTypeTo
 	sortFieldTypeWeight
 	sortFieldTypeDescription
+	sortFieldTypeTag
+	sortFieldTypeCompileTime
+	sortFieldTypeFirmware
 )
 
 type GetListRequest struct {
@@ -65,6 +71,43 @@ type MeshNode struct {
 	Groups      int                `json:"groups"`
 	Binded      int                `json:"binded"`
 	Flags       int                `json:"flags"`
+
+	compileTime time.Time
+}
+
+func (n MeshNode) Sort(other MeshNode, sortType SortType, sortBy SortFieldType) bool {
+	switch sortType {
+	case sortTypeAsc:
+		switch sortBy {
+		case sortFieldTypeID:
+			return n.ID < other.ID
+		case sortFieldTypeNode:
+			return n.ID < other.ID
+		case sortFieldTypeTag:
+			return n.Tag < other.Tag
+		case sortFieldTypeFirmware:
+			return n.FirmRev < other.FirmRev
+		case sortFieldTypeCompileTime:
+			return n.compileTime.Before(other.compileTime)
+		}
+		return n.ID < other.ID
+	case sortTypeDesc:
+		switch sortBy {
+		case sortFieldTypeID:
+			return n.ID > other.ID
+		case sortFieldTypeNode:
+			return n.ID > other.ID
+		case sortFieldTypeTag:
+			return n.Tag > other.Tag
+		case sortFieldTypeFirmware:
+			return n.FirmRev > other.FirmRev
+		case sortFieldTypeCompileTime:
+			return n.compileTime.After(other.compileTime)
+		}
+		return n.ID > other.ID
+	}
+
+	return false
 }
 
 type CreateLinkRequest struct {
@@ -214,6 +257,12 @@ func parseSortFieldType(s string) SortFieldType {
 		return sortFieldTypeTo
 	case "weight":
 		return sortFieldTypeWeight
+	case "tag":
+		return sortFieldTypeTag
+	case "comptime":
+		return sortFieldTypeCompileTime
+	case "firmrev":
+		return sortFieldTypeFirmware
 	}
 	return sortFieldTypeID
 }

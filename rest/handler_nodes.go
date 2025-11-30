@@ -99,25 +99,7 @@ func (h *Handler) getNodes(c *gin.Context) {
 	}
 
 	sort.Slice(jsonNodes, func(i, j int) bool {
-		switch p.SortType {
-		case sortTypeAsc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID < jsonNodes[j].ID
-		case sortTypeDesc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID > jsonNodes[j].ID
-		}
-		return false
+		return jsonNodes[i].Sort(jsonNodes[j], p.SortType, p.SortBy)
 	})
 
 	jsonNodesOut := []MeshNode{}

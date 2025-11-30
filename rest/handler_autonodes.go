@@ -40,30 +40,13 @@ func (h *Handler) getAutoNodes(c *gin.Context) {
 			Path:        graph.FmtNodePath(network, dev),
 			IsLocal:     dev.ID() == network.LocalDeviceId(),
 			FirmRev:     dev.Device().Firmware(),
+			compileTime: dev.Device().CompileTime(),
 			CompileTime: dev.Device().CompileTimeString(),
 		})
 	}
 
 	sort.Slice(jsonNodes, func(i, j int) bool {
-		switch p.SortType {
-		case sortTypeAsc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID < jsonNodes[j].ID
-		case sortTypeDesc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID > jsonNodes[j].ID
-		}
-		return false
+		return jsonNodes[i].Sort(jsonNodes[j], p.SortType, p.SortBy)
 	})
 
 	jsonNodesOut := []MeshNode{}
