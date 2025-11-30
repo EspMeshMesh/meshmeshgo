@@ -34,6 +34,7 @@ type ConnPathConnection struct {
 	serial    *SerialConnection
 	handle    uint16
 	sequence  uint16
+	network   *graph.Network
 }
 
 func ParseAddress(address string) (MeshNodeId, error) {
@@ -123,7 +124,7 @@ func (client *ConnPathConnection) OpenConnectionAsync(addr MeshNodeId, port uint
 	logger.WithFields(logger.Fields{"addr": utils.FmtNodeId(int64(addr)), "port": port, "handle": client.handle}).
 		Debug("ConnPathConnection.OpenConnectionAsync")
 
-	network := graph.GetMainNetwork()
+	network := client.network
 	device, err := network.GetNodeDevice(int64(addr))
 	if err != nil {
 		return err
@@ -215,10 +216,11 @@ func (client *ConnPathConnection) HandleIncomingReply(v *ConnectedPathApiReply) 
 	}
 }
 
-func NewConnPathConnection(serial *SerialConnection) *ConnPathConnection {
+func NewConnPathConnection(serial *SerialConnection, network *graph.Network) *ConnPathConnection {
 
 	conn := &ConnPathConnection{
 		serial:    serial,
+		network:   network,
 		handle:    serial.GetNextHandle(),
 		connState: connPathConnectionStateInit,
 	}

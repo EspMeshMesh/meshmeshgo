@@ -160,7 +160,7 @@ func (d *DiscoveryProcedure) InitStep() error {
 	d.state = DiscoveryProcedureStateRun
 
 	if d.network == nil {
-		d.network = gra.NewNetwork(int64(d.serial.LocalNode))
+		d.network = gra.NewNetwork(int64(d.serial.LocalNode), gra.NETWORK_ID_DISCOVERY)
 	}
 
 	if d.currentDeviceId != 0 {
@@ -301,7 +301,6 @@ func (d *DiscoveryProcedure) Run() {
 	}
 
 	gra.SetMainNetwork(d.network)
-	gra.NotifyMainNetworkChanged()
 }
 
 func NewDiscoveryProcedure(serial *SerialConnection, network *gra.Network, nodeid int64) *DiscoveryProcedure {

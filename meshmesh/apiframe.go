@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-restruct/restruct"
 	"leguru.net/m/v2/graph"
-	"leguru.net/m/v2/logger"
 )
 
 type MeshNodeId uint32
@@ -247,12 +246,15 @@ type LogEventApiReply struct {
 const nodePresentstionApiReply uint8 = 65
 
 type NodePresentstionApiReply struct {
-	Id         uint8          `struct:"uint8"`
-	SourceAddr MeshNodeId     `struct:"uint32"`
-	TargetAddr MeshNodeId     `struct:"uint32"`
-	Repeaters  [16]MeshNodeId `struct:"[16]uint32"`
-	Rssi       [16]int16      `struct:"[16]int16"`
-	Hops       uint8          `struct:"uint8"`
+	Id          uint8          `struct:"uint8"`
+	SourceAddr  MeshNodeId     `struct:"uint32"`
+	TargetAddr  MeshNodeId     `struct:"uint32"`
+	Repeaters   [16]MeshNodeId `struct:"[16]uint32"`
+	Rssi        [16]int16      `struct:"[16]int16"`
+	Hops        uint8          `struct:"uint8"`
+	Hostname    [16]byte       `struct:"[16]byte"`
+	FwVersion   [16]byte       `struct:"[16]byte"`
+	CompileTime [24]byte       `struct:"[24]byte"`
 }
 
 const connectedUnicastRequest uint8 = 114
@@ -497,7 +499,6 @@ func (frame *ApiFrame) AwaitedReply() (uint8, uint8, error) {
 }
 func (frame *ApiFrame) AssertType(wantedType uint8, wantedSubtype uint8) bool {
 	if len(frame.data) == 0 || frame.data[0] != wantedType && (wantedSubtype > 0 && (len(frame.data) < 2 || frame.data[1] != wantedSubtype)) {
-		logger.WithFields(logger.Fields{"Want": wantedType, "Got": frame.data[0]}).Error("AssertType failed")
 		return false
 	} else {
 		return true

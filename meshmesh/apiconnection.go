@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/utils"
 )
@@ -140,13 +141,13 @@ func (client *ApiConnection) ForwardData(data []byte) error {
 	return nil
 }
 
-func NewApiConnection(socket net.Conn, serial *SerialConnection, addr MeshNodeId, port int, closedCb func(NetworkConnection)) (*ApiConnection, error) {
+func NewApiConnection(socket net.Conn, serial *SerialConnection, network *graph.Network, addr MeshNodeId, port int, closedCb func(NetworkConnection)) (*ApiConnection, error) {
 	if !serial.IsConnected() {
 		return nil, errors.New("serial is not open")
 	}
 
 	client := &ApiConnection{
-		NetworkConnectionStruct: NewNetworkConnectionStruct(socket, serial, addr, port, closedCb),
+		NetworkConnectionStruct: NewNetworkConnectionStruct(socket, serial, network, addr, port, closedCb),
 	}
 
 	err := client.startHandshake(addr, port)

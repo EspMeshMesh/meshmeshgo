@@ -159,7 +159,7 @@ func (h *Handler) createNode(c *gin.Context) {
 
 	dev := graph.NewNodeDevice(int64(req.ID), req.InUse, req.Tag)
 	network.AddNode(dev)
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
@@ -230,7 +230,7 @@ func (h *Handler) updateNode(c *gin.Context) {
 
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.InUse)
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	if req.Firmware != "" {
 		firmware, err := dataurl.DecodeString(req.Firmware)
@@ -303,7 +303,7 @@ func (h *Handler) deleteNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
 	network.RemoveNode(int64(id))
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	c.JSON(http.StatusOK, jsonNode)
 }

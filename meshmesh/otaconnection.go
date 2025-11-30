@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/utils"
 )
@@ -144,9 +145,9 @@ func (client *OtaConnection) ForwardData(data []byte) error {
 	return nil
 }
 
-func NewOtaConnection(connection net.Conn, serial *SerialConnection, addr MeshNodeId, port int, closedCb func(NetworkConnection)) (*OtaConnection, error) {
+func NewOtaConnection(connection net.Conn, serial *SerialConnection, network *graph.Network, addr MeshNodeId, port int, closedCb func(NetworkConnection)) (*OtaConnection, error) {
 	client := &OtaConnection{
-		NetworkConnectionStruct: NewNetworkConnectionStruct(connection, serial, addr, port, closedCb),
+		NetworkConnectionStruct: NewNetworkConnectionStruct(connection, serial, network, addr, port, closedCb),
 	}
 
 	err := client.startHandshake(addr, port)

@@ -50,7 +50,7 @@ func (s *Server) NetworkNodeConfigure(_ context.Context, req *meshmesh.NetworkNo
 	dev := node.(graph.NodeDevice)
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.Inuse)
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 	return &meshmesh.NetworkNodeConfigureReply{Success: true}, nil
 }
 
@@ -62,6 +62,6 @@ func (s *Server) NetworkNodeDelete(_ context.Context, req *meshmesh.NetworkNodeD
 	}
 
 	network.RemoveNode(int64(req.Id))
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 	return &meshmesh.NetworkNodeDeleteReply{Success: true}, nil
 }

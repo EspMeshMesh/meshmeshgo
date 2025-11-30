@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gonum.org/v1/gonum/graph"
@@ -13,11 +14,22 @@ import (
 	"leguru.net/m/v2/utils"
 )
 
+const (
+	NETWORK_ID_MAIN      = 0
+	NETWORK_ID_STARPATH  = 1
+	NETWORK_ID_DISCOVERY = 2
+)
+
+const (
+	compileTimeFormat = "Jan _2 2006, 15:04:05"
+)
+
 type Device struct {
-	inuse      bool
-	discovered bool
-	tag        string
-	firmware   string
+	inuse       bool
+	discovered  bool
+	tag         string
+	firmware    string
+	compileTime time.Time
 }
 
 func (d Device) InUse() bool {
@@ -50,6 +62,21 @@ func (d Device) Firmware() string {
 
 func (d *Device) SetFirmware(firmware string) {
 	d.firmware = firmware
+}
+
+func (d Device) CompileTime() time.Time {
+	return d.compileTime
+}
+
+func (d Device) CompileTimeString() string {
+	if d.compileTime.IsZero() {
+		return ""
+	}
+	return d.compileTime.Format(compileTimeFormat)
+}
+
+func (d *Device) SetCompileTime(compileTime string) {
+	d.compileTime, _ = time.Parse(compileTimeFormat, compileTime)
 }
 
 func NewDevice(inuse bool, tag string) *Device {
@@ -86,7 +113,6 @@ func NewNodeDevice(id int64, inuse bool, tag string) NodeDevice {
 
 // Network: is a weighted directed graph of NodeDevices
 var mainNetwork *Network
-var mainNetworkChancgedCallbacks []func()
 var mainNetworkLock sync.Mutex
 
 func GetMainNetwork() *Network {
@@ -100,23 +126,30 @@ func GetMainNetwork() *Network {
 func SetMainNetwork(network *Network) {
 	mainNetworkLock.Lock()
 	mainNetwork = network
+	mainNetwork.networkId = NETWORK_ID_MAIN
 	mainNetworkLock.Unlock()
-	NotifyMainNetworkChanged()
-}
-
-func AddMainNetworkChangedCallback(cb func()) {
-	mainNetworkChancgedCallbacks = append(mainNetworkChancgedCallbacks, cb)
-}
-
-func NotifyMainNetworkChanged() {
-	for _, cb := range mainNetworkChancgedCallbacks {
-		cb()
-	}
+	network.NotifyNetworkChanged()
 }
 
 type Network struct {
 	simple.WeightedDirectedGraph
-	localDeviceId int64
+	localDeviceId            int64
+	networkChancgedCallbacks []func()
+	networkId                int
+}
+
+func (g *Network) NetworkId() int {
+	return g.networkId
+}
+
+func (g *Network) AddNetworkChangedCallback(cb func()) {
+	g.networkChancgedCallbacks = append(g.networkChancgedCallbacks, cb)
+}
+
+func (g *Network) NotifyNetworkChanged() {
+	for _, cb := range g.networkChancgedCallbacks {
+		cb()
+	}
 }
 
 func (g *Network) LocalDeviceIdChanged(nodeId int64) {
@@ -128,7 +161,7 @@ func (g *Network) LocalDeviceIdChanged(nodeId int64) {
 		g.AddNode(NewNodeDevice(nodeId, true, "local"))
 		logger.WithField("device", utils.FmtNodeId(nodeId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
 	}
-	NotifyMainNetworkChanged()
+	g.NotifyNetworkChanged()
 }
 
 func (g *Network) LocalDeviceId() int64 {
@@ -239,8 +272,8 @@ func (g *Network) CopyNetwork() *Network {
 	return &network
 }
 
-func NewNetwork(localDeviceId int64) *Network {
-	network := Network{localDeviceId: localDeviceId}
+func NewNetwork(localDeviceId int64, networkId int) *Network {
+	network := Network{localDeviceId: localDeviceId, networkId: networkId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
 	if localDeviceId > 0 {
 		network.AddNode(NewNodeDevice(localDeviceId, true, "local"))
@@ -248,8 +281,8 @@ func NewNetwork(localDeviceId int64) *Network {
 	return &network
 }
 
-func NewNeworkFromFile(filename string, localDeviceId int64) (*Network, error) {
-	network := Network{localDeviceId: localDeviceId}
+func NewNeworkFromFile(filename string, localDeviceId int64, networkId int) (*Network, error) {
+	network := Network{localDeviceId: localDeviceId, networkId: networkId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
 	err := network.readGraph(filename)
 	if err != nil {

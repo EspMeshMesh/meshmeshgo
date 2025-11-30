@@ -34,12 +34,13 @@ func (h *Handler) getAutoNodes(c *gin.Context) {
 	for nodes.Next() {
 		dev := nodes.Node().(graph.NodeDevice)
 		jsonNodes = append(jsonNodes, MeshNode{
-			ID:      uint(dev.ID()),
-			Tag:     string(dev.Device().Tag()),
-			InUse:   dev.Device().InUse(),
-			Path:    graph.FmtNodePath(network, dev),
-			IsLocal: dev.ID() == network.LocalDeviceId(),
-			FirmRev: dev.Device().Firmware(),
+			ID:          uint(dev.ID()),
+			Tag:         string(dev.Device().Tag()),
+			InUse:       dev.Device().InUse(),
+			Path:        graph.FmtNodePath(network, dev),
+			IsLocal:     dev.ID() == network.LocalDeviceId(),
+			FirmRev:     dev.Device().Firmware(),
+			CompileTime: dev.Device().CompileTimeString(),
 		})
 	}
 

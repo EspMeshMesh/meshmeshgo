@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/gin-gonic/gin"
-	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/utils"
 )
 
@@ -33,7 +32,7 @@ func (h *Handler) getAutoLinks(c *gin.Context) {
 	filter_from, _ := utils.ParseNodeId(p.Filter["from"])
 	filter_any := smartInteger(p.Filter["any"])
 
-	network := graph.GetMainNetwork()
+	network := h.starPath.GetNetwork()
 	links := network.WeightedEdges()
 	jsonLinks := make([]MeshLink, 0, links.Len())
 	for links.Next() {

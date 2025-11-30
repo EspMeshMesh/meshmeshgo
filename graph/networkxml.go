@@ -54,8 +54,14 @@ func (g *Network) readGraph(filename string) error {
 
 				firmware := attrs["firmware"].(string)
 
+				comptime, ok := attrs["comptime"].(string)
+				if !ok {
+					comptime = ""
+				}
+
 				dev := NewNodeDevice(id, inuse, descr)
 				dev.Device().SetFirmware(firmware)
+				dev.Device().SetCompileTime(comptime)
 				g.AddNode(dev)
 			}
 
@@ -102,6 +108,7 @@ func (g *Network) writeGraph(filename string) error {
 	gml.RegisterKey(graphml.KeyForNode, "discover", "state variable for discovery", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "comptime", "the node compile time", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForEdge, "weight", "the node firmware revision", reflect.Float32, 0.0)
 	gml.RegisterKey(graphml.KeyForEdge, "weight2", "the node firmware revision", reflect.Float32, 0.0)
 
@@ -118,6 +125,7 @@ func (g *Network) writeGraph(filename string) error {
 			"inuse":      node.Device().InUse(),
 			"discovered": node.Device().Discovered(),
 			"firmware":   node.Device().Firmware(),
+			"comptime":   node.Device().CompileTimeString(),
 		}
 
 		gr.AddNode(attributes, utils.FmtNodeId(node.ID()), node.Device().Tag())

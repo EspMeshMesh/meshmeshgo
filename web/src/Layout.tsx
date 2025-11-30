@@ -8,6 +8,7 @@ export const MyMenu = () => (
       <Menu.ResourceItem name="nodes" />
       <Menu.ResourceItem name="links" />
       <Menu.ResourceItem name="autoNodes" />
+      <Menu.ResourceItem name="autoLinks" />
       <Menu.ResourceItem name="esphomeServers" />
       <Menu.ResourceItem name="esphomeConnections" />
       <Menu.Item to="/discoverylive" primaryText="Discovery" leftIcon={<SearchIcon />} />
