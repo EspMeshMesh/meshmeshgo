@@ -1,0 +1,17 @@
+syntax = "proto3";
+package espmeshmesh;
+option go_package = "./meshmesh/pb";
+
+enum PathDirection {
+  TO_COORDINATOR = 0;
+  TO_NODE = 1;
+}
+
+message PathRouting {
+  uint32 source_address = 1;
+  uint32 target_address = 2;
+  repeated uint32 repeaters = 3;
+  repeated int32 rssi = 4;
+  uint32 hop_index = 5;
+  PathDirection direction = 6;
+}

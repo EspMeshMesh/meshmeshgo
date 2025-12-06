@@ -24,6 +24,7 @@ const (
 	sortFieldTypeDescription
 	sortFieldTypeTag
 	sortFieldTypeCompileTime
+	sortFieldTypeLastSeen
 	sortFieldTypeFirmware
 )
 
@@ -60,6 +61,7 @@ type MeshNode struct {
 	IsLocal     bool               `json:"is_local"`
 	FirmRev     string             `json:"firmrev"`
 	CompileTime string             `json:"comptime"`
+	LastSeen    string             `json:"last_seen"`
 	Firmware    []MeshNodeFirmware `json:"firmware"`
 	Progress    int                `json:"progress"`
 	Path        string             `json:"path"`
@@ -73,6 +75,7 @@ type MeshNode struct {
 	Flags       int                `json:"flags"`
 
 	compileTime time.Time
+	lastSeen    time.Time
 }
 
 func (n MeshNode) Sort(other MeshNode, sortType SortType, sortBy SortFieldType) bool {
@@ -89,6 +92,8 @@ func (n MeshNode) Sort(other MeshNode, sortType SortType, sortBy SortFieldType) 
 			return n.FirmRev < other.FirmRev
 		case sortFieldTypeCompileTime:
 			return n.compileTime.Before(other.compileTime)
+		case sortFieldTypeLastSeen:
+			return n.lastSeen.Before(other.lastSeen)
 		}
 		return n.ID < other.ID
 	case sortTypeDesc:
@@ -103,6 +108,8 @@ func (n MeshNode) Sort(other MeshNode, sortType SortType, sortBy SortFieldType) 
 			return n.FirmRev > other.FirmRev
 		case sortFieldTypeCompileTime:
 			return n.compileTime.After(other.compileTime)
+		case sortFieldTypeLastSeen:
+			return n.lastSeen.After(other.lastSeen)
 		}
 		return n.ID > other.ID
 	}
@@ -300,4 +307,11 @@ func (r GetListRequest) toGetListParams() GetListParams {
 	}
 
 	return p
+}
+
+func formatTimeForJson(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.RFC3339)
 }

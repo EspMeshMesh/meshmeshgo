@@ -6,7 +6,9 @@ import (
 	"fmt"
 
 	"github.com/go-restruct/restruct"
+	"google.golang.org/protobuf/proto"
 	"leguru.net/m/v2/graph"
+	pb "leguru.net/m/v2/meshmesh/pb"
 )
 
 type MeshNodeId uint32
@@ -243,9 +245,11 @@ type LogEventApiReply struct {
 	Line  string     `struct:"string"`
 }
 
-const nodePresentstionApiReply uint8 = 65
+const nodePresentationApiReply uint8 = 65
 
-type NodePresentstionApiReply struct {
+const protoPresentationRxApiReply uint8 = 69
+
+type NodePresentationApiReply struct {
 	Id          uint8          `struct:"uint8"`
 	SourceAddr  MeshNodeId     `struct:"uint32"`
 	TargetAddr  MeshNodeId     `struct:"uint32"`
@@ -498,7 +502,7 @@ func (frame *ApiFrame) AwaitedReply() (uint8, uint8, error) {
 	}
 }
 func (frame *ApiFrame) AssertType(wantedType uint8, wantedSubtype uint8) bool {
-	if len(frame.data) == 0 || frame.data[0] != wantedType && (wantedSubtype > 0 && (len(frame.data) < 2 || frame.data[1] != wantedSubtype)) {
+	if len(frame.data) == 0 || (frame.data[0] != wantedType) || (wantedSubtype > 0 && (len(frame.data) < 2 || frame.data[1] != wantedSubtype)) {
 		return false
 	} else {
 		return true
@@ -545,7 +549,7 @@ func (frame *ApiFrame) Output() []byte {
 	return out
 }
 
-func (frame *ApiFrame) Decode() (interface{}, error) {
+func (frame *ApiFrame) Decode() (any, error) {
 	if !frame.escaped {
 		frame.Escape()
 	}
@@ -608,10 +612,17 @@ func (frame *ApiFrame) Decode() (interface{}, error) {
 			v.Line = string(frame.data[7:])
 		}
 		return v, nil
-	case nodePresentstionApiReply:
-		v := NodePresentstionApiReply{}
+	case nodePresentationApiReply:
+		v := NodePresentationApiReply{}
 		restruct.Unpack(frame.data, binary.LittleEndian, &v)
 		return v, nil
+	case protoPresentationRxApiReply:
+		v := pb.NodePresentationRx{}
+		err := proto.Unmarshal(frame.data, &v)
+		if err != nil {
+			return nil, err
+		}
+		return &v, nil
 	case connectedPathApiReply:
 		v := ConnectedPathApiReply{}
 		restruct.Unpack(frame.data, binary.LittleEndian, &v)

@@ -67,6 +67,7 @@ func (s router) Register(g gin.IRouter) {
 	autoNodesGroup := r.Group("/autoNodes")
 	{
 		autoNodesGroup.GET("", h.getAutoNodes)
+		autoNodesGroup.GET("/:id", h.getOneAutoNode)
 	}
 
 	autoLinksGroup := r.Group("/autoLinks")

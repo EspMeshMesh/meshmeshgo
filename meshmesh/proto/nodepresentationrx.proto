@@ -1,0 +1,11 @@
+syntax = "proto3";
+import "nodepresentation.proto";
+import "pathrouting.proto";
+
+package espmeshmesh;
+option go_package = "./meshmesh/pb";
+
+message NodePresentationRx {
+  NodePresentation node_presentation = 1;
+  PathRouting path_routing = 2;
+}

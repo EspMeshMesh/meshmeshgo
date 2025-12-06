@@ -1,0 +1,8 @@
+syntax = "proto3";
+package espmeshmesh;
+
+message DiscoveryBeaconReply {
+  uint32 target_address = 1;
+  uint32 incoming_rssi = 2;
+  uint32 hops = 3;
+}

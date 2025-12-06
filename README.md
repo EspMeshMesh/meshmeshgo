@@ -51,3 +51,8 @@ The HUB will provide an interface between the IP world (Home Assistant) and the 
 3) [No HUB communication](docs/tutorial/no_hub_commuication.md)
 4) [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
 5) [Running with Docker](docs/tutorial/docker_guide.md)
+
+
+## Generate proto messages
+
+protoc -Imeshmesh/proto/ --go_out=. meshmesh/proto/nodepresentationrx.proto

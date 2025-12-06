@@ -1,0 +1,11 @@
+syntax = "proto3";
+package espmeshmesh;
+
+enum Commands {
+    CMD_NODE_PRESENTATION_REQ = 0;
+    CMD_NODE_PRESENTATION_REP = 1;
+}
+  
+message Command {
+  Commands command_id = 1;
+}

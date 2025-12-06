@@ -30,9 +30,10 @@ type Device struct {
 	tag         string
 	firmware    string
 	compileTime time.Time
+	lastSeen    time.Time
 }
 
-func (d Device) InUse() bool {
+func (d *Device) InUse() bool {
 	return d.inuse
 }
 
@@ -40,7 +41,7 @@ func (d *Device) SetInUse(inuse bool) {
 	d.inuse = inuse
 }
 
-func (d Device) Discovered() bool {
+func (d *Device) Discovered() bool {
 	return d.discovered
 }
 
@@ -48,7 +49,7 @@ func (d *Device) SetDiscovered(discovered bool) {
 	d.discovered = discovered
 }
 
-func (d Device) Tag() string {
+func (d *Device) Tag() string {
 	return d.tag
 }
 
@@ -56,7 +57,7 @@ func (d *Device) SetTag(tag string) {
 	d.tag = tag
 }
 
-func (d Device) Firmware() string {
+func (d *Device) Firmware() string {
 	return d.firmware
 }
 
@@ -64,19 +65,31 @@ func (d *Device) SetFirmware(firmware string) {
 	d.firmware = firmware
 }
 
-func (d Device) CompileTime() time.Time {
+func (d *Device) CompileTime() time.Time {
 	return d.compileTime
 }
 
-func (d Device) CompileTimeString() string {
+func (d *Device) CompileTimeString() string {
 	if d.compileTime.IsZero() {
 		return ""
 	}
 	return d.compileTime.Format(compileTimeFormat)
 }
 
-func (d *Device) SetCompileTime(compileTime string) {
+func (d *Device) SetCompileTime(compileTime time.Time) {
+	d.compileTime = compileTime
+}
+
+func (d *Device) SetCompileTimeString(compileTime string) {
 	d.compileTime, _ = time.Parse(compileTimeFormat, compileTime)
+}
+
+func (d *Device) LastSeen() time.Time {
+	return d.lastSeen
+}
+
+func (d *Device) SetLastSeen(lastSeen time.Time) {
+	d.lastSeen = lastSeen
 }
 
 func NewDevice(inuse bool, tag string) *Device {

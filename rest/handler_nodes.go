@@ -43,11 +43,14 @@ func (h *Handler) nodeInfoGetCmd(m *MeshNode) error {
 
 func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *graph.Network) MeshNode {
 	jsonNode := MeshNode{
-		ID:       uint(dev.ID()),
-		Tag:      string(dev.Device().Tag()),
-		InUse:    dev.Device().InUse(),
-		Path:     graph.FmtNodePath(network, dev),
-		Firmware: []MeshNodeFirmware{},
+		ID:          uint(dev.ID()),
+		Tag:         string(dev.Device().Tag()),
+		InUse:       dev.Device().InUse(),
+		IsLocal:     dev.ID() == network.LocalDeviceId(),
+		FirmRev:     dev.Device().Firmware(),
+		CompileTime: formatTimeForJson(dev.Device().CompileTime()),
+		LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
+		Path:        graph.FmtNodePath(network, dev),
 	}
 
 	if h.firmwareUploadProcedure == nil || h.firmwareUploadProcedure.IsComplete() {

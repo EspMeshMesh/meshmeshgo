@@ -6,12 +6,43 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"leguru.net/m/v2/graphml"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/utils"
 )
+
+func parseString(attrs map[string]any, key string) string {
+	s, ok := attrs[key].(string)
+	if !ok {
+		return ""
+	}
+	return s
+}
+
+func parseTime(attrs map[string]any, key string) time.Time {
+	ts, ok := attrs[key].(string)
+	if !ok {
+		return time.Time{}
+	}
+	if ts == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, ts)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.Format(time.RFC3339)
+}
 
 func (g *Network) readGraph(filename string) error {
 	xmlFile, err := os.Open(filename)
@@ -52,16 +83,10 @@ func (g *Network) readGraph(filename string) error {
 					}
 				}
 
-				firmware := attrs["firmware"].(string)
-
-				comptime, ok := attrs["comptime"].(string)
-				if !ok {
-					comptime = ""
-				}
-
 				dev := NewNodeDevice(id, inuse, descr)
-				dev.Device().SetFirmware(firmware)
-				dev.Device().SetCompileTime(comptime)
+				dev.Device().SetFirmware(parseString(attrs, "firmware"))
+				dev.Device().SetCompileTime(parseTime(attrs, "comptime"))
+				dev.Device().SetLastSeen(parseTime(attrs, "lastseen"))
 				g.AddNode(dev)
 			}
 
@@ -109,6 +134,7 @@ func (g *Network) writeGraph(filename string) error {
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "comptime", "the node compile time", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "lastseen", "the node last seen time", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForEdge, "weight", "the node firmware revision", reflect.Float32, 0.0)
 	gml.RegisterKey(graphml.KeyForEdge, "weight2", "the node firmware revision", reflect.Float32, 0.0)
 
@@ -121,11 +147,12 @@ func (g *Network) writeGraph(filename string) error {
 	for nodes.Next() {
 		node := nodes.Node().(NodeDevice)
 
-		attributes := map[string]interface{}{
+		attributes := map[string]any{
 			"inuse":      node.Device().InUse(),
 			"discovered": node.Device().Discovered(),
 			"firmware":   node.Device().Firmware(),
-			"comptime":   node.Device().CompileTimeString(),
+			"comptime":   formatTime(node.Device().CompileTime()),
+			"lastseen":   formatTime(node.Device().LastSeen()),
 		}
 
 		gr.AddNode(attributes, utils.FmtNodeId(node.ID()), node.Device().Tag())

@@ -17,13 +17,14 @@ import { EspHomeServerList } from "./esphome/EspHomeServerList";
 import { EsphomeClientsList } from "./esphome/EsphomeClientsList";
 import { MeshAutoNodesList } from "./network/MeshAutoNodesList";
 import { MeshAutoLinksList } from "./network/MeshAutoLinksList";
+import { MeshAutoNodeEdit } from "./network/MeshAutoNodeEdit";
 import { ShowGraph } from './showgraph/ShowGraph';
 
 export const App = () => (
     <Admin layout={Layout} dataProvider={dataProvider} title="Mesh Network">
         <Resource name="nodes" list={MeshNodesList} edit={MeshNodeEdit} create={MeshNodeCreate} icon={HubIcon} />
         <Resource name="links" list={MeshLinksList} edit={MeshLinkEdit} create={MeshLinkCreate} icon={LinkIcon} />
-        <Resource name="autoNodes" list={MeshAutoNodesList} icon={HubIcon} />
+        <Resource name="autoNodes" list={MeshAutoNodesList} edit={MeshAutoNodeEdit} icon={HubIcon} />
         <Resource name="autoLinks" list={MeshAutoLinksList} icon={LinkIcon} />
         <Resource name="esphomeServers" list={EspHomeServerList} options={{ label: "EspHome Servers" }} />
         <Resource name="esphomeConnections" list={EsphomeClientsList} options={{ label: "EspHome Clients" }} />

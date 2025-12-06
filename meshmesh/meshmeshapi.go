@@ -12,8 +12,10 @@ import (
 	"github.com/go-restruct/restruct"
 	"github.com/sirupsen/logrus"
 	"go.bug.st/serial"
+	"google.golang.org/protobuf/proto"
 	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
+	pb "leguru.net/m/v2/meshmesh/pb"
 )
 
 const defaultSessionMaxTimeoutMs = 500
@@ -65,7 +67,8 @@ type SerialConnection struct {
 	LocalNode            uint32
 	ConnPathFn           func(*ConnectedPathApiReply)
 	DiscAssociateFn      func(*DiscAssociateApiReply, *SerialConnection)
-	NodePresentstionFn   func(*NodePresentstionApiReply, *SerialConnection)
+	NodePresentstionFn   func(*NodePresentationApiReply, *SerialConnection)
+	ProtoPresentationFn  func(*pb.NodePresentationRx, *SerialConnection)
 	localNodeIdChangedCb func(meshNodeId MeshNodeId)
 	lastUseTime          time.Time
 }
@@ -150,11 +153,21 @@ func (serialConn *SerialConnection) ReadFrame(buffer []byte) {
 				if serialConn.DiscAssociateFn != nil {
 					serialConn.DiscAssociateFn(&vv, serialConn)
 				}
-			} else if frame.AssertType(nodePresentstionApiReply, 0) {
-				vv := NodePresentstionApiReply{}
+			} else if frame.AssertType(nodePresentationApiReply, 0) {
+				vv := NodePresentationApiReply{}
 				restruct.Unpack(frame.data, binary.LittleEndian, &vv)
 				if serialConn.NodePresentstionFn != nil {
 					serialConn.NodePresentstionFn(&vv, serialConn)
+				}
+			} else if frame.AssertType(protoPresentationRxApiReply, 0) {
+				vv := pb.NodePresentationRx{}
+				err := proto.Unmarshal(buffer[1:], &vv)
+				if err != nil {
+					logger.Log().WithField("err", err).Error("Can't decode incoming proto presentation packet")
+					return
+				}
+				if serialConn.ProtoPresentationFn != nil {
+					serialConn.ProtoPresentationFn(&vv, serialConn)
 				}
 			} else {
 				logger.Log().WithField("type", fmt.Sprintf("%02X", buffer[0])).Error("Unused packet received")
@@ -433,7 +446,7 @@ func (serialConn *SerialConnection) sendReceiveApiProt(session *SerialSession) (
 	}
 }
 
-func (serialConn *SerialConnection) SendReceiveApiProt(cmd any, protocol MeshProtocol, target MeshNodeId, network *graph.Network) (interface{}, error) {
+func (serialConn *SerialConnection) SendReceiveApiProt(cmd any, protocol MeshProtocol, target MeshNodeId, network *graph.Network) (any, error) {
 	if target == 0 {
 		protocol = DirectProtocol
 	}
@@ -450,7 +463,7 @@ func (serialConn *SerialConnection) SendReceiveApiProt(cmd any, protocol MeshPro
 	return serialConn.sendReceiveApiProt(session)
 }
 
-func (serialConn *SerialConnection) SendReceiveApiProtTimeout(cmd interface{}, protocol MeshProtocol, target MeshNodeId, network *graph.Network, timeoutMs int64) (interface{}, error) {
+func (serialConn *SerialConnection) SendReceiveApiProtTimeout(cmd interface{}, protocol MeshProtocol, target MeshNodeId, network *graph.Network, timeoutMs int64) (any, error) {
 	if target == 0 {
 		protocol = DirectProtocol
 	}
