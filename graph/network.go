@@ -277,6 +277,7 @@ func (g *Network) SaveToFile(filename string) error {
 func (g *Network) CopyNetwork() *Network {
 	network := Network{}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
+	network.networkId = g.networkId
 	network.localDeviceId = g.localDeviceId
 
 	nodes := g.Nodes()
