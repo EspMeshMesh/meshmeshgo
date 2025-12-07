@@ -490,13 +490,25 @@ func (frame *ApiFrame) AwaitedReply() (uint8, uint8, error) {
 	if len(frame.data) == 0 {
 		return 0, 0, errors.New("can't send an empty frame")
 	} else {
-		if frame.data[0] == connectedUnicastRequest {
+		switch frame.data[0] {
+		case connectedUnicastRequest:
 			if len(frame.data) < 6 {
 				return 0, 0, errors.New("invalid unicast frame")
 			} else {
 				return frame.awaitedReplyBytes(5)
 			}
+		case multipathRequest:
+			if len(frame.data) < 6 {
+				return 0, 0, errors.New("invalid multipath frame")
 		} else {
+				pathLen := frame.data[5]
+				if len(frame.data) < 6+4*int(pathLen) {
+					return 0, 0, errors.New("invalid multipath frame")
+				} else {
+					return frame.awaitedReplyBytes(6 + 4*uint16(pathLen))
+				}
+			}
+		default:
 			return frame.awaitedReplyBytes(0)
 		}
 	}
