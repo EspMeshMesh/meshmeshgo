@@ -97,3 +97,35 @@ func (h *Handler) getOneAutoNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, true, network)
 	c.JSON(http.StatusOK, jsonNode)
 }
+
+// @Id deleteAutoNode
+// @Summary Delete node
+// @Tags    AutoNodes
+// @Accept  json
+// @Produce json
+// @Param   id path string true "Auto Node ID"
+// @Success 200 {object} MeshNode
+// @Failure 400 {object} string
+// @Router /api/v1/autoNodes/{id} [delete]
+func (h *Handler) deleteAutoNode(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	network := h.starPath.GetNetwork()
+	dev, err := network.GetNodeDevice(int64(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Node not found: " + err.Error()})
+		return
+	}
+
+	jsonNode := h.fillNodeStruct(dev, false, network)
+
+	network.RemoveNode(int64(id))
+	network.NotifyNetworkChanged()
+
+	c.JSON(http.StatusOK, jsonNode)
+}

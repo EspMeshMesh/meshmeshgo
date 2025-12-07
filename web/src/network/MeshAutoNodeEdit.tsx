@@ -1,6 +1,7 @@
-import { Edit, TextInput, BooleanInput, TabbedForm, NumberInput, FormDataConsumer, Toolbar, SaveButton, DateTimeInput } from "react-admin";
+import { Edit, TextInput, BooleanInput, TabbedForm, NumberInput, FormDataConsumer, Toolbar, SaveButton, DateTimeInput, DeleteButton } from "react-admin";
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { Typography } from "@mui/material";
 import { formatNodeId } from "../utils";
 
@@ -9,6 +10,7 @@ const CreateToolbar = () => {
         <Toolbar>
             <SaveButton label="Save changes" color="primary" variant="contained" icon={<EditNoteIcon />} />
             <Typography variant="h6" sx={{ flexGrow: 1 }}></Typography>
+            <DeleteButton label="Delete" color="error" variant="contained" icon={<DeleteIcon />} />
         </Toolbar>
     );
 }
