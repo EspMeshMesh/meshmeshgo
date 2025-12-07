@@ -30,7 +30,7 @@ func (h *Handler) nodeInfoGetCmd(m *MeshNode) error {
 	}
 	cfg := rep.(meshmesh.NodeConfigApiReply)
 
-	m.Revision = rev.Revision
+	m.Revision = utils.TruncateZeros(rev.Revision)
 	m.DevTag = utils.TruncateZeros(cfg.Tag)
 	m.Channel = int8(cfg.Channel)
 	m.TxPower = int8(cfg.TxPower)

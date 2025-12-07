@@ -56,7 +56,7 @@ const firmRevApiReply uint8 = 3
 
 type FirmRevApiReply struct {
 	Id       uint8  `struct:"uint8"`
-	Revision string `struct:"string"`
+	Revision []byte `struct:"[]byte"`
 }
 
 const nodeIdApiRequest uint8 = 4
@@ -500,7 +500,7 @@ func (frame *ApiFrame) AwaitedReply() (uint8, uint8, error) {
 		case multipathRequest:
 			if len(frame.data) < 6 {
 				return 0, 0, errors.New("invalid multipath frame")
-		} else {
+			} else {
 				pathLen := frame.data[5]
 				if len(frame.data) < 6+4*int(pathLen) {
 					return 0, 0, errors.New("invalid multipath frame")
@@ -571,7 +571,7 @@ func (frame *ApiFrame) Decode() (any, error) {
 		v := EchoApiReply{Id: 0, Echo: string(frame.data[1:])}
 		return v, nil
 	case firmRevApiReply:
-		v := FirmRevApiReply{Id: 0, Revision: string(frame.data[1:])}
+		v := FirmRevApiReply{Id: 0, Revision: frame.data[1:]}
 		return v, nil
 	case nodeIdApiReply:
 		v := NodeIdApiReply{}
