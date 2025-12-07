@@ -7,5 +7,6 @@ message NodePresentation {
   string hostname = 1;
   string firmware_version = 2;
   string compile_time = 3;
+  string lib_version = 4;
 }
 

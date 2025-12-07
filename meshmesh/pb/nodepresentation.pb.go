@@ -26,6 +26,7 @@ type NodePresentation struct {
 	Hostname        string                 `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	FirmwareVersion string                 `protobuf:"bytes,2,opt,name=firmware_version,json=firmwareVersion,proto3" json:"firmware_version,omitempty"`
 	CompileTime     string                 `protobuf:"bytes,3,opt,name=compile_time,json=compileTime,proto3" json:"compile_time,omitempty"`
+	LibVersion      string                 `protobuf:"bytes,4,opt,name=lib_version,json=libVersion,proto3" json:"lib_version,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -81,15 +82,24 @@ func (x *NodePresentation) GetCompileTime() string {
 	return ""
 }
 
+func (x *NodePresentation) GetLibVersion() string {
+	if x != nil {
+		return x.LibVersion
+	}
+	return ""
+}
+
 var File_nodepresentation_proto protoreflect.FileDescriptor
 
 const file_nodepresentation_proto_rawDesc = "" +
 	"\n" +
-	"\x16nodepresentation.proto\x12\vespmeshmesh\"|\n" +
+	"\x16nodepresentation.proto\x12\vespmeshmesh\"\x9d\x01\n" +
 	"\x10NodePresentation\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12)\n" +
 	"\x10firmware_version\x18\x02 \x01(\tR\x0ffirmwareVersion\x12!\n" +
-	"\fcompile_time\x18\x03 \x01(\tR\vcompileTimeB\x0fZ\r./meshmesh/pbb\x06proto3"
+	"\fcompile_time\x18\x03 \x01(\tR\vcompileTime\x12\x1f\n" +
+	"\vlib_version\x18\x04 \x01(\tR\n" +
+	"libVersionB\x0fZ\r./meshmesh/pbb\x06proto3"
 
 var (
 	file_nodepresentation_proto_rawDescOnce sync.Once

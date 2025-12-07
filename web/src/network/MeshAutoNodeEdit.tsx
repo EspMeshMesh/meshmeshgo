@@ -22,6 +22,8 @@ export const MeshAutoNodeEdit = () => {
                 <TabbedForm.Tab label="Local graph information" icon={<EditNoteIcon />} iconPosition="start" sx={{ maxWidth: '40em', minHeight: 48 }}>
                     <TextInput source="id" format={v => formatNodeId(v)} disabled />
                     <TextInput source="tag" label="Host name" />
+                    <TextInput source="firmrev" label="Firmware" disabled />
+                    <TextInput source="libvers" label="EspMeshMesh version" disabled />
                     <DateTimeInput source="comptime" label="Compile time" disabled />
                     <DateTimeInput source="last_seen" label="Last seen" parse={(value: string) => (value ? new Date(value) : value === '' ? null : value)} disabled/>
                     <BooleanInput source="in_use" />

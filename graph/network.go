@@ -29,6 +29,7 @@ type Device struct {
 	discovered  bool
 	tag         string
 	firmware    string
+	libVersion  string
 	compileTime time.Time
 	lastSeen    time.Time
 }
@@ -82,6 +83,14 @@ func (d *Device) SetCompileTime(compileTime time.Time) {
 
 func (d *Device) SetCompileTimeString(compileTime string) {
 	d.compileTime, _ = time.Parse(compileTimeFormat, compileTime)
+}
+
+func (d *Device) LibVersion() string {
+	return d.libVersion
+}
+
+func (d *Device) SetLibVersion(libVersion string) {
+	d.libVersion = libVersion
 }
 
 func (d *Device) LastSeen() time.Time {

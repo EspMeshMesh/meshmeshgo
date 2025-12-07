@@ -55,24 +55,23 @@ type MeshNodeFirmware struct {
 }
 
 type MeshNode struct {
-	ID          uint               `json:"id"`
-	Tag         string             `json:"tag"`
-	InUse       bool               `json:"in_use"`
-	IsLocal     bool               `json:"is_local"`
-	FirmRev     string             `json:"firmrev"`
-	CompileTime string             `json:"comptime"`
-	LastSeen    string             `json:"last_seen"`
-	Firmware    []MeshNodeFirmware `json:"firmware"`
-	Progress    int                `json:"progress"`
-	Path        string             `json:"path"`
-	Revision    string             `json:"revision"`
-	Error       string             `json:"error"`
-	DevTag      string             `json:"dev_tag"`
-	Channel     int8               `json:"channel"`
-	TxPower     int8               `json:"tx_power"`
-	Groups      int                `json:"groups"`
-	Binded      int                `json:"binded"`
-	Flags       int                `json:"flags"`
+	ID          uint   `json:"id"`
+	Tag         string `json:"tag"`
+	InUse       bool   `json:"in_use"`
+	IsLocal     bool   `json:"is_local"`
+	FirmRev     string `json:"firmrev"`
+	CompileTime string `json:"comptime"`
+	LastSeen    string `json:"last_seen"`
+	LibVersion  string `json:"libvers"`
+	Path        string `json:"path"`
+	Revision    string `json:"revision"`
+	Error       string `json:"error"`
+	DevTag      string `json:"dev_tag"`
+	Channel     int8   `json:"channel"`
+	TxPower     int8   `json:"tx_power"`
+	Groups      int    `json:"groups"`
+	Binded      int    `json:"binded"`
+	Flags       int    `json:"flags"`
 
 	compileTime time.Time
 	lastSeen    time.Time

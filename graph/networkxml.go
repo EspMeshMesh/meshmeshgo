@@ -87,6 +87,7 @@ func (g *Network) readGraph(filename string) error {
 				dev.Device().SetFirmware(parseString(attrs, "firmware"))
 				dev.Device().SetCompileTime(parseTime(attrs, "comptime"))
 				dev.Device().SetLastSeen(parseTime(attrs, "lastseen"))
+				dev.Device().SetLibVersion(parseString(attrs, "libvers"))
 				g.AddNode(dev)
 			}
 
@@ -133,7 +134,8 @@ func (g *Network) writeGraph(filename string) error {
 	gml.RegisterKey(graphml.KeyForNode, "discover", "state variable for discovery", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
-	gml.RegisterKey(graphml.KeyForNode, "comptime", "the node compile time", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "libvers", "the mesh library version", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "comptime", "the firmware compile time", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "lastseen", "the node last seen time", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForEdge, "weight", "the node firmware revision", reflect.Float32, 0.0)
 	gml.RegisterKey(graphml.KeyForEdge, "weight2", "the node firmware revision", reflect.Float32, 0.0)
@@ -151,6 +153,7 @@ func (g *Network) writeGraph(filename string) error {
 			"inuse":      node.Device().InUse(),
 			"discovered": node.Device().Discovered(),
 			"firmware":   node.Device().Firmware(),
+			"libvers":    node.Device().LibVersion(),
 			"comptime":   formatTime(node.Device().CompileTime()),
 			"lastseen":   formatTime(node.Device().LastSeen()),
 		}

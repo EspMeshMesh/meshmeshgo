@@ -48,6 +48,7 @@ func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *g
 		InUse:       dev.Device().InUse(),
 		IsLocal:     dev.ID() == network.LocalDeviceId(),
 		FirmRev:     dev.Device().Firmware(),
+		LibVersion:  dev.Device().LibVersion(),
 		CompileTime: formatTimeForJson(dev.Device().CompileTime()),
 		LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
 		Path:        graph.FmtNodePath(network, dev),

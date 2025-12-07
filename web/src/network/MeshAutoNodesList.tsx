@@ -8,6 +8,7 @@ export const MeshAutoNodesList = () => {
             <DataTable.Col source="id" render={record => formatNodeId(record.id)} />
             <DataTable.Col source="tag" label="Hostname" />
             <DataTable.Col source="firmrev" label="Firmware" />
+            <DataTable.Col source="libvers" label="Mesh ver." />
             <DataTable.Col source="comptime" label="Compile time">
                 <DateField source="comptime" showTime={true} showDate={true} />
             </DataTable.Col>

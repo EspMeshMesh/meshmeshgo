@@ -56,3 +56,4 @@ The HUB will provide an interface between the IP world (Home Assistant) and the 
 ## Generate proto messages
 
 protoc -Imeshmesh/proto/ --go_out=. meshmesh/proto/nodepresentationrx.proto
+protoc -Imeshmesh/proto/ --go_out=. meshmesh/proto/nodepresentation.proto

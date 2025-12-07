@@ -45,6 +45,7 @@ func (h *Handler) getAutoNodes(c *gin.Context) {
 			Path:        graph.FmtNodePath(network, dev),
 			IsLocal:     dev.ID() == network.LocalDeviceId(),
 			FirmRev:     dev.Device().Firmware(),
+			LibVersion:  dev.Device().LibVersion(),
 			CompileTime: formatTimeForJson(dev.Device().CompileTime()),
 			LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
 

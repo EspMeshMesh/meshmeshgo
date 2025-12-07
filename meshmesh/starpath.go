@@ -39,7 +39,7 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 	}
 
 	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress))}).Info("NodePresentstionReply received")
-	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime}).Info("ProtoPresentationReply received")
+	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime, "lib_version": v.NodePresentation.LibVersion}).Info("ProtoPresentationReply received")
 	for i := range len(v.PathRouting.Repeaters) {
 		logger.WithFields(logger.Fields{"repeater": utils.FmtNodeId(int64(v.PathRouting.Repeaters[i])), "rssi": v.PathRouting.Rssi[i]}).Debug("NodePresentstionReply received")
 	}
@@ -53,6 +53,7 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 		sourceNode.Device().SetTag(v.NodePresentation.Hostname)
 		sourceNode.Device().SetFirmware(v.NodePresentation.FirmwareVersion)
 		sourceNode.Device().SetCompileTimeString(v.NodePresentation.CompileTime)
+		sourceNode.Device().SetLibVersion(v.NodePresentation.LibVersion)
 		sourceNode.Device().SetLastSeen(time.Now())
 		s.network.AddNode(sourceNode)
 
