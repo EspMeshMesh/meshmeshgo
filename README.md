@@ -1,9 +1,14 @@
 # Hub for MeshMesh network
 
-The main task of this software is to make a bridge between the MeshMesh network and Home Assistant software 
-implementing the ESPHome API standard.
+The main task of this software is to make a bridge between the MeshMesh network and Home Assistant software implementing the ESPHome API standard.
 
-The firmware for ESPHome nodes can be found on this [repository](https://github.com/EspMeshMesh/esphome-meshmesh)
+- The firmware for ESPHome nodes can be found on this [repository](https://github.com/EspMeshMesh/esphome-meshmesh)
+- The PlatformIO library can bu found on this [repository](https://github.com/EspMeshMesh/espmeshmesh)
+
+## Getting started
+
+The getting started tutorial that uses the new autoforming netowrk can be found on this page: [Fast Getting Started](docs/tutorial/getting_started_starpath.md)
+
 
 ## Mesh network description
 
@@ -46,11 +51,11 @@ The HUB will provide an interface between the IP world (Home Assistant) and the 
 
 ## Getting started tutorial
 
-1) [Firmware upload](docs/tutorial/firmware_build_upload.md)
-2) [Getting Started](docs/tutorial/getting_started.md)
-3) [No HUB communication](docs/tutorial/no_hub_commuication.md)
-4) [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
-5) [Running with Docker](docs/tutorial/docker_guide.md)
+1. [Firmware upload](docs/tutorial/firmware_build_upload.md)
+2. [Getting Started](docs/tutorial/getting_started.md)
+3. [No HUB communication](docs/tutorial/no_hub_commuication.md)
+4. [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
+5. [Running with Docker](docs/tutorial/docker_guide.md)
 
 
 ## Generate proto messages
