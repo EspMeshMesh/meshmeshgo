@@ -5,10 +5,19 @@ The main task of this software is to make a bridge between the MeshMesh network 
 - The firmware for ESPHome nodes can be found on this [repository](https://github.com/EspMeshMesh/esphome-meshmesh)
 - The PlatformIO library can bu found on this [repository](https://github.com/EspMeshMesh/espmeshmesh)
 
-## Getting started
+## Fast Getting started tutorials
 
-The getting started tutorial that uses the new autoforming netowrk can be found on this page: [Fast Getting Started](docs/tutorial/getting_started_starpath.md)
+The getting started tutorial that uses the new autoforming netowrk can be found on this page.
 
+1. [Fast Getting Started](docs/tutorial/getting_started_starpath.md)
+
+## Other Getting started tutorials
+
+1. [Firmware upload](docs/tutorial/firmware_build_upload.md)
+2. [Getting Started](docs/tutorial/getting_started.md)
+3. [No HUB communication](docs/tutorial/no_hub_commuication.md)
+4. [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
+5. [Running with Docker](docs/tutorial/docker_guide.md)
 
 ## Mesh network description
 
@@ -32,6 +41,7 @@ Five internal protocols can be used from application to transport information:
 3) MultiHop: Send a packet to a specific node using repeaters (HOPS)
 4) Polite broadcast: Send a packet to all network nodes in broadcast (Use with care)
 5) Connected path: A stream socket-like connection (Used by ESPHome API for instance)
+6) Star path: Autoforming network: Send a packet from a node to the coordinator without discovery.
 
 ## Mesh network architecture
 
@@ -48,15 +58,6 @@ The constructed graph is a directed graph in which every edge is associated with
 A Dijkstra algorithm is used to find the best path from one node of the network to another. This path will minimize the cost and will maximize the probability to use the best signal level to transmit packets.
 
 The HUB will provide an interface between the IP world (Home Assistant) and the Mesh world (ESPHome). The full graph network is stored in a single xml file that can be hand edited.
-
-## Getting started tutorial
-
-1. [Firmware upload](docs/tutorial/firmware_build_upload.md)
-2. [Getting Started](docs/tutorial/getting_started.md)
-3. [No HUB communication](docs/tutorial/no_hub_commuication.md)
-4. [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
-5. [Running with Docker](docs/tutorial/docker_guide.md)
-
 
 ## Generate proto messages
 

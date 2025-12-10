@@ -84,7 +84,7 @@ mdns:
   disabled: True
 
 ping:
-  address: 1
+  address: server
 ```
 
 Next connect the coordinator device to the USB port and upload the firmware to this module. 
@@ -144,7 +144,7 @@ ota:
 
 ping:
   update_interval: 120s
-  address: 0xFFFFFFFE
+  address: coordinator
 
 binary_sensor:
   - platform: ping
@@ -188,8 +188,6 @@ The most important thing to start is to specify the correct serial port name ass
 Change the config file to adapt to your system:
 - SerialPortName: The full path of the serial port connected to the coordinator device. 
 - SerialPortBaudRate: The configured baud rate of the coordinator device. 
-
-
 
 ```json
 {
@@ -243,8 +241,7 @@ The MeshMeshGo HUB support the ZeroConf and mDns protocols. IF your network is n
 
 ### Automatic method
 
-Clock on Add button in the test-node-1 section.
-
+Clock on Add button in the test-node-1 section. If your node show-up inside the active HomeAssistant device you are done otherwise you can try the next manual procedure.
 
 ### Manual method
 

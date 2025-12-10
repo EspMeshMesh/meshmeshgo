@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/iterator"
 	"gonum.org/v1/gonum/graph/path"
 	"gonum.org/v1/gonum/graph/simple"
 	"leguru.net/m/v2/logger"
@@ -158,6 +159,20 @@ type Network struct {
 	localDeviceId            int64
 	networkChancgedCallbacks []func()
 	networkId                int
+}
+
+func (g *Network) EdgesTo(nodeId int64) graph.Edges {
+	foundEdges := make([]graph.Edge, 0)
+
+	edges := g.Edges()
+	for edges.Next() {
+		edge := edges.Edge()
+		if edge.To().ID() == nodeId {
+			foundEdges = append(foundEdges, edge)
+		}
+	}
+
+	return iterator.NewOrderedEdges(foundEdges)
 }
 
 func (g *Network) NetworkId() int {
