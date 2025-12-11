@@ -6,8 +6,9 @@ import (
 	"fmt"
 
 	"github.com/go-restruct/restruct"
+	"google.golang.org/protobuf/proto"
 	"leguru.net/m/v2/graph"
-	"leguru.net/m/v2/logger"
+	pb "leguru.net/m/v2/meshmesh/pb"
 )
 
 type MeshNodeId uint32
@@ -55,7 +56,7 @@ const firmRevApiReply uint8 = 3
 
 type FirmRevApiReply struct {
 	Id       uint8  `struct:"uint8"`
-	Revision string `struct:"string"`
+	Revision []byte `struct:"[]byte"`
 }
 
 const nodeIdApiRequest uint8 = 4
@@ -242,6 +243,22 @@ type LogEventApiReply struct {
 	Level uint16     `struct:"uint16"`
 	From  MeshNodeId `struct:"uint32"`
 	Line  string     `struct:"string"`
+}
+
+const nodePresentationApiReply uint8 = 65
+
+const protoPresentationRxApiReply uint8 = 69
+
+type NodePresentationApiReply struct {
+	Id          uint8          `struct:"uint8"`
+	SourceAddr  MeshNodeId     `struct:"uint32"`
+	TargetAddr  MeshNodeId     `struct:"uint32"`
+	Repeaters   [16]MeshNodeId `struct:"[16]uint32"`
+	Rssi        [16]int16      `struct:"[16]int16"`
+	Hops        uint8          `struct:"uint8"`
+	Hostname    [16]byte       `struct:"[16]byte"`
+	FwVersion   [16]byte       `struct:"[16]byte"`
+	CompileTime [24]byte       `struct:"[24]byte"`
 }
 
 const connectedUnicastRequest uint8 = 114
@@ -473,20 +490,31 @@ func (frame *ApiFrame) AwaitedReply() (uint8, uint8, error) {
 	if len(frame.data) == 0 {
 		return 0, 0, errors.New("can't send an empty frame")
 	} else {
-		if frame.data[0] == connectedUnicastRequest {
+		switch frame.data[0] {
+		case connectedUnicastRequest:
 			if len(frame.data) < 6 {
 				return 0, 0, errors.New("invalid unicast frame")
 			} else {
 				return frame.awaitedReplyBytes(5)
 			}
-		} else {
+		case multipathRequest:
+			if len(frame.data) < 6 {
+				return 0, 0, errors.New("invalid multipath frame")
+			} else {
+				pathLen := frame.data[5]
+				if len(frame.data) < 6+4*int(pathLen) {
+					return 0, 0, errors.New("invalid multipath frame")
+				} else {
+					return frame.awaitedReplyBytes(6 + 4*uint16(pathLen))
+				}
+			}
+		default:
 			return frame.awaitedReplyBytes(0)
 		}
 	}
 }
 func (frame *ApiFrame) AssertType(wantedType uint8, wantedSubtype uint8) bool {
-	if len(frame.data) == 0 || frame.data[0] != wantedType && (wantedSubtype > 0 && (len(frame.data) < 2 || frame.data[1] != wantedSubtype)) {
-		logger.WithFields(logger.Fields{"Want": wantedType, "Got": frame.data[0]}).Error("AssertType failed")
+	if len(frame.data) == 0 || (frame.data[0] != wantedType) || (wantedSubtype > 0 && (len(frame.data) < 2 || frame.data[1] != wantedSubtype)) {
 		return false
 	} else {
 		return true
@@ -533,7 +561,7 @@ func (frame *ApiFrame) Output() []byte {
 	return out
 }
 
-func (frame *ApiFrame) Decode() (interface{}, error) {
+func (frame *ApiFrame) Decode() (any, error) {
 	if !frame.escaped {
 		frame.Escape()
 	}
@@ -543,7 +571,7 @@ func (frame *ApiFrame) Decode() (interface{}, error) {
 		v := EchoApiReply{Id: 0, Echo: string(frame.data[1:])}
 		return v, nil
 	case firmRevApiReply:
-		v := FirmRevApiReply{Id: 0, Revision: string(frame.data[1:])}
+		v := FirmRevApiReply{Id: 0, Revision: frame.data[1:]}
 		return v, nil
 	case nodeIdApiReply:
 		v := NodeIdApiReply{}
@@ -596,6 +624,17 @@ func (frame *ApiFrame) Decode() (interface{}, error) {
 			v.Line = string(frame.data[7:])
 		}
 		return v, nil
+	case nodePresentationApiReply:
+		v := NodePresentationApiReply{}
+		restruct.Unpack(frame.data, binary.LittleEndian, &v)
+		return v, nil
+	case protoPresentationRxApiReply:
+		v := pb.NodePresentationRx{}
+		err := proto.Unmarshal(frame.data, &v)
+		if err != nil {
+			return nil, err
+		}
+		return &v, nil
 	case connectedPathApiReply:
 		v := ConnectedPathApiReply{}
 		restruct.Unpack(frame.data, binary.LittleEndian, &v)

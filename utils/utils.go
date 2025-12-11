@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -80,17 +81,12 @@ func HashString(s string, mod int) int {
 	return int(hashValue)
 }
 
-func FindFirstZeroChar(s []byte) int {
-	for i, c := range s {
-		if c == 0 {
-			return i
-		}
-	}
-	return len(s)
-}
-
 func TruncateZeros(s []byte) string {
-	return string(s[:FindFirstZeroChar(s)])
+	pos := bytes.IndexByte(s, 0)
+	if pos == -1 {
+		return string(s)
+	}
+	return string(s[:bytes.IndexByte(s, 0)])
 }
 
 func BackupFile(filename string, backupdir string) {

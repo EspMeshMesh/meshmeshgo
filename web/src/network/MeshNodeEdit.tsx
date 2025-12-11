@@ -24,9 +24,6 @@ export const MeshNodeEdit = () => {
                 <TextInput source="id" format={v => formatNodeId(v)} disabled />
                 <TextInput source="tag" />
                 <BooleanInput source="in_use" />
-                <FileInput source="firmware" accept={{ 'application/octet-stream': ['.bin'] }} multiple={false}>
-                    <FileField source="url" label="Firmware" />
-                </FileInput>
             </TabbedForm.Tab>
             <TabbedForm.Tab label="Configuration" icon={<SettingsIcon />} iconPosition="start" sx={{ maxWidth: '40em', minHeight: 48 }}>
                 <TextInput source="error" format={v => v?.length > 0 ? v : "No error"} readOnly />

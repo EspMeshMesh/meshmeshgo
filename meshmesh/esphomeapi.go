@@ -106,9 +106,9 @@ func (c *NetworkConnectionStruct) flushBuffer(buffer *bytes.Buffer) {
 	}
 }
 
-func NewNetworkConnectionStruct(socket net.Conn, serial *SerialConnection, addr MeshNodeId, port int, closedCb func(NetworkConnection)) NetworkConnectionStruct {
+func NewNetworkConnectionStruct(socket net.Conn, serial *SerialConnection, network *graph.Network, addr MeshNodeId, port int, closedCb func(NetworkConnection)) NetworkConnectionStruct {
 	return NetworkConnectionStruct{
-		meshprotocol: NewConnPathConnection(serial),
+		meshprotocol: NewConnPathConnection(serial, network),
 		socketOpen:   true,
 		socket:       socket,
 		tmpBuffer:    bytes.NewBuffer([]byte{}),
@@ -124,6 +124,7 @@ type ServerApi struct {
 	Clients       []NetworkConnection
 	listener      net.Listener
 	listenAddress string
+	network       *graph.Network
 }
 
 func (s *ServerApi) GetListenAddress() string {
@@ -180,7 +181,7 @@ func (s *ServerApi) ListenAndServe(serial *SerialConnection, remotePort int) {
 		logger.WithFields(logger.Fields{"nodeId": s.Address, "active": len(s.Clients)}).Debug("EspHome connection accepted")
 
 		if remotePort == fixedApiRemotePort {
-			client, err := NewApiConnection(socket, serial, s.Address, remotePort, s.ClientClosedCb)
+			client, err := NewApiConnection(socket, serial, s.network, s.Address, remotePort, s.ClientClosedCb)
 			if err != nil {
 				logger.Error(err)
 				socket.Close()
@@ -189,7 +190,7 @@ func (s *ServerApi) ListenAndServe(serial *SerialConnection, remotePort int) {
 				logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(s.Address)), "clients": len(s.Clients)}).Debug("Added new client")
 			}
 		} else {
-			client, err := NewOtaConnection(socket, serial, s.Address, remotePort, s.ClientClosedCb)
+			client, err := NewOtaConnection(socket, serial, s.network, s.Address, remotePort, s.ClientClosedCb)
 			if err != nil {
 				logger.Error(err)
 				socket.Close()
@@ -212,7 +213,7 @@ func (s *ServerApi) ShutDown() {
 	s.listener.Close()
 }
 
-func NewServerApi(serial *SerialConnection, address MeshNodeId, config *ServerApiConfig) (*ServerApi, error) {
+func NewServerApi(serial *SerialConnection, network *graph.Network, address MeshNodeId, config *ServerApiConfig) (*ServerApi, error) {
 	var bindAddress string = config.BindAddress
 	if config.BindAddress == "" || config.BindAddress == "dynamic" {
 		bindAddress = utils.FmtNodeIdHass(int64(address))
@@ -223,7 +224,7 @@ func NewServerApi(serial *SerialConnection, address MeshNodeId, config *ServerAp
 		bindPort = utils.HashString(utils.FmtNodeId(int64(address)), config.SizeOfPortsPool) + config.BasePortOffset
 	}
 
-	server := ServerApi{Address: address}
+	server := ServerApi{Address: address, network: network}
 	server.listenAddress = fmt.Sprintf("%s:%d", bindAddress, bindPort)
 	listener, err := net.Listen("tcp4", server.listenAddress)
 	if err != nil {
@@ -285,7 +286,7 @@ func (m *MultiServerApi) MainNetworkChanged() {
 			}
 			if !found {
 				logger.WithFields(logger.Fields{"node": utils.FmtNodeId(int64(node.ID()))}).Debug("MainNetworkChanged adding esphome connection to new node")
-				server, err := NewServerApi(m.serial, MeshNodeId(node.ID()), &m.config)
+				server, err := NewServerApi(m.serial, graph.GetMainNetwork(), MeshNodeId(node.ID()), &m.config)
 				if err != nil {
 					log.Error(err)
 				} else {
@@ -316,6 +317,65 @@ func (m *MultiServerApi) MainNetworkChanged() {
 	m.Servers = newServers
 }
 
+func (m *MultiServerApi) StarPathProtocol(starpath *StarPath) {
+	m.starPath = starpath
+	starpath.network.AddNetworkChangedCallback(m.starPathNetworkChanged)
+	m.starPathNetworkChanged()
+}
+
+func (m *MultiServerApi) serverAddressExists(nodeId MeshNodeId) bool {
+	for _, server := range m.Servers {
+		if server.Address == nodeId {
+			return true
+		}
+	}
+	return false
+}
+
+func (m *MultiServerApi) getNewNodes(network *graph.Network) []MeshNodeId {
+	newNodes := make([]MeshNodeId, 0)
+	nodes := network.Nodes()
+	for nodes.Next() {
+		node := nodes.Node().(graph.NodeDevice)
+		if node.Device().InUse() && !network.IsLocalDevice(node) {
+			if !m.serverAddressExists(MeshNodeId(node.ID())) {
+				newNodes = append(newNodes, MeshNodeId(node.ID()))
+			}
+		}
+	}
+	return newNodes
+}
+
+func (m *MultiServerApi) createApiAndOtaServers(nodeId MeshNodeId, network *graph.Network) {
+	configApi := m.config
+	configApi.RemotePort = fixedApiRemotePort
+
+	server, err := NewServerApi(m.serial, network, nodeId, &configApi)
+	if err != nil {
+		log.Error(err)
+	} else {
+		m.Servers = append(m.Servers, server)
+	}
+
+	configOta := m.config
+	configOta.BindPort = fixedOtaRemotePort
+	configOta.RemotePort = fixedOtaRemotePort
+	serverOta, err := NewServerApi(m.serial, network, nodeId, &configOta)
+	if err != nil {
+		log.Error(err)
+	} else {
+		m.Servers = append(m.Servers, serverOta)
+	}
+}
+
+func (m *MultiServerApi) starPathNetworkChanged() {
+	newNodes := m.getNewNodes(m.starPath.network)
+	for _, nodeId := range newNodes {
+		logger.WithFields(logger.Fields{"nodeId": nodeId}).Debug("starPathNetworkChanged adding new node to star path")
+		m.createApiAndOtaServers(nodeId, m.starPath.network)
+	}
+}
+
 type ServerApiConfig struct {
 	BindAddress     string
 	BindPort        int
@@ -327,6 +387,7 @@ type ServerApiConfig struct {
 type MultiServerApi struct {
 	espApiStats *EspApiStats
 	serial      *SerialConnection
+	starPath    *StarPath
 	config      ServerApiConfig
 	Servers     []*ServerApi
 }
@@ -339,30 +400,12 @@ func NewMultiServerApi(serial *SerialConnection, config ServerApiConfig) *MultiS
 
 	network := graph.GetMainNetwork()
 	nodes := network.Nodes()
-	graph.AddMainNetworkChangedCallback(multisrv.MainNetworkChanged)
+	network.AddNetworkChangedCallback(multisrv.MainNetworkChanged)
 
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
 		if node.Device().InUse() && !network.IsLocalDevice(node) {
-			configApi := config
-			configApi.RemotePort = fixedApiRemotePort
-
-			server, err := NewServerApi(serial, MeshNodeId(node.ID()), &configApi)
-			if err != nil {
-				log.Error(err)
-			} else {
-				multisrv.Servers = append(multisrv.Servers, server)
-			}
-
-			configOta := config
-			configOta.BindPort = fixedOtaRemotePort
-			configOta.RemotePort = fixedOtaRemotePort
-			serverOta, err := NewServerApi(serial, MeshNodeId(node.ID()), &configOta)
-			if err != nil {
-				log.Error(err)
-			} else {
-				multisrv.Servers = append(multisrv.Servers, serverOta)
-			}
+			multisrv.createApiAndOtaServers(MeshNodeId(node.ID()), network)
 		}
 	}
 	return &multisrv

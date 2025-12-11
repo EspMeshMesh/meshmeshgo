@@ -1,0 +1,2 @@
+espmeshmesh.PathRouting.repeaters          max_count:16
+espmeshmesh.PathRouting.rssi               max_count:16

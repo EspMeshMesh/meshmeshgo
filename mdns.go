@@ -82,6 +82,10 @@ func setupMdns() {
 			}
 
 			var port = utils.ComputeNodePort(node.ID(), mdnsConfig.apiPort, mdnsConfig.apiBasePort, mdnsConfig.apiPortsSpan)
+			var firmware = node.Device().Firmware()
+			if firmware == "" {
+				firmware = "unknown"
+			}
 
 			service, err := mdns.NewMDNSService(
 				node.DeviceTagOrFormattedId(),
@@ -97,7 +101,7 @@ func setupMdns() {
 					"project_name=" + node.Device().Tag(),
 					"project_version=1.0.1",
 					"network=meshmesh",
-					"version=2025.5.1",
+					"version=" + firmware,
 				},
 			)
 			if err != nil {

@@ -97,12 +97,12 @@ func networkChangedCallback() {
 func initNetwork(localNodeId int64) *gra.Network {
 	var network *gra.Network
 	if _, err := os.Stat(graphFilename); err == nil {
-		network, err = gra.NewNeworkFromFile(graphFilename, localNodeId)
+		network, err = gra.NewNeworkFromFile(graphFilename, localNodeId, gra.NETWORK_ID_MAIN)
 		if err != nil {
 			logger.Log().Fatal("Graph read error: ", err)
 		}
 	} else {
-		network = gra.NewNetwork(localNodeId)
+		network = gra.NewNetwork(localNodeId, gra.NETWORK_ID_MAIN)
 		network.SaveToFile(graphFilename)
 	}
 	return network
@@ -187,9 +187,11 @@ func main() {
 	}
 	serialPort.SetLocalNodeIdChangedCb(localNodeIdChangedCallback)
 
-	// Init network graph
+	// Init main network graph
 	gra.SetMainNetwork(initNetwork(int64(serialPort.LocalNode)))
-	gra.AddMainNetworkChangedCallback(networkChangedCallback)
+	gra.GetMainNetwork().AddNetworkChangedCallback(networkChangedCallback)
+	// Init star path network grpah
+	starPath := meshmesh.NewStarPath(serialPort)
 
 	// Zeroconf and mdns setup
 	setMdnsConfig(MdnsServiceConfig{
@@ -213,6 +215,7 @@ func main() {
 		BasePortOffset:  config.BasePortOffset,
 		SizeOfPortsPool: config.SizeOfPortsPool,
 	})
+	esphomeapi.StarPathProtocol(starPath)
 
 	// Start RPC Server
 	rpcServer := rpc.NewRpcServer(config.RpcBindAddress)
@@ -220,7 +223,7 @@ func main() {
 	defer rpcServer.Stop()
 
 	// Start rest server
-	restHandler := rest.NewHandler(serialPort, esphomeapi)
+	restHandler := rest.NewHandler(serialPort, esphomeapi, starPath)
 	rest.StartRestServer(rest.NewRouter(restHandler), config.RestBindAddress)
 
 	var lastStatsTime time.Time

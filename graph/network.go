@@ -4,22 +4,38 @@ import (
 	"fmt"
 	"math"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gonum.org/v1/gonum/graph"
+	"gonum.org/v1/gonum/graph/iterator"
 	"gonum.org/v1/gonum/graph/path"
 	"gonum.org/v1/gonum/graph/simple"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/utils"
 )
 
+const (
+	NETWORK_ID_MAIN      = 0
+	NETWORK_ID_STARPATH  = 1
+	NETWORK_ID_DISCOVERY = 2
+)
+
+const (
+	compileTimeFormat = "Jan _2 2006, 15:04:05"
+)
+
 type Device struct {
-	inuse      bool
-	discovered bool
-	tag        string
+	inuse       bool
+	discovered  bool
+	tag         string
+	firmware    string
+	libVersion  string
+	compileTime time.Time
+	lastSeen    time.Time
 }
 
-func (d Device) InUse() bool {
+func (d *Device) InUse() bool {
 	return d.inuse
 }
 
@@ -27,7 +43,7 @@ func (d *Device) SetInUse(inuse bool) {
 	d.inuse = inuse
 }
 
-func (d Device) Discovered() bool {
+func (d *Device) Discovered() bool {
 	return d.discovered
 }
 
@@ -35,12 +51,55 @@ func (d *Device) SetDiscovered(discovered bool) {
 	d.discovered = discovered
 }
 
-func (d Device) Tag() string {
+func (d *Device) Tag() string {
 	return d.tag
 }
 
 func (d *Device) SetTag(tag string) {
 	d.tag = tag
+}
+
+func (d *Device) Firmware() string {
+	return d.firmware
+}
+
+func (d *Device) SetFirmware(firmware string) {
+	d.firmware = firmware
+}
+
+func (d *Device) CompileTime() time.Time {
+	return d.compileTime
+}
+
+func (d *Device) CompileTimeString() string {
+	if d.compileTime.IsZero() {
+		return ""
+	}
+	return d.compileTime.Format(compileTimeFormat)
+}
+
+func (d *Device) SetCompileTime(compileTime time.Time) {
+	d.compileTime = compileTime
+}
+
+func (d *Device) SetCompileTimeString(compileTime string) {
+	d.compileTime, _ = time.Parse(compileTimeFormat, compileTime)
+}
+
+func (d *Device) LibVersion() string {
+	return d.libVersion
+}
+
+func (d *Device) SetLibVersion(libVersion string) {
+	d.libVersion = libVersion
+}
+
+func (d *Device) LastSeen() time.Time {
+	return d.lastSeen
+}
+
+func (d *Device) SetLastSeen(lastSeen time.Time) {
+	d.lastSeen = lastSeen
 }
 
 func NewDevice(inuse bool, tag string) *Device {
@@ -77,7 +136,6 @@ func NewNodeDevice(id int64, inuse bool, tag string) NodeDevice {
 
 // Network: is a weighted directed graph of NodeDevices
 var mainNetwork *Network
-var mainNetworkChancgedCallbacks []func()
 var mainNetworkLock sync.Mutex
 
 func GetMainNetwork() *Network {
@@ -91,23 +149,44 @@ func GetMainNetwork() *Network {
 func SetMainNetwork(network *Network) {
 	mainNetworkLock.Lock()
 	mainNetwork = network
+	mainNetwork.networkId = NETWORK_ID_MAIN
 	mainNetworkLock.Unlock()
-	NotifyMainNetworkChanged()
-}
-
-func AddMainNetworkChangedCallback(cb func()) {
-	mainNetworkChancgedCallbacks = append(mainNetworkChancgedCallbacks, cb)
-}
-
-func NotifyMainNetworkChanged() {
-	for _, cb := range mainNetworkChancgedCallbacks {
-		cb()
-	}
+	network.NotifyNetworkChanged()
 }
 
 type Network struct {
 	simple.WeightedDirectedGraph
-	localDeviceId int64
+	localDeviceId            int64
+	networkChancgedCallbacks []func()
+	networkId                int
+}
+
+func (g *Network) EdgesTo(nodeId int64) graph.Edges {
+	foundEdges := make([]graph.Edge, 0)
+
+	edges := g.Edges()
+	for edges.Next() {
+		edge := edges.Edge()
+		if edge.To().ID() == nodeId {
+			foundEdges = append(foundEdges, edge)
+		}
+	}
+
+	return iterator.NewOrderedEdges(foundEdges)
+}
+
+func (g *Network) NetworkId() int {
+	return g.networkId
+}
+
+func (g *Network) AddNetworkChangedCallback(cb func()) {
+	g.networkChancgedCallbacks = append(g.networkChancgedCallbacks, cb)
+}
+
+func (g *Network) NotifyNetworkChanged() {
+	for _, cb := range g.networkChancgedCallbacks {
+		cb()
+	}
 }
 
 func (g *Network) LocalDeviceIdChanged(nodeId int64) {
@@ -119,7 +198,7 @@ func (g *Network) LocalDeviceIdChanged(nodeId int64) {
 		g.AddNode(NewNodeDevice(nodeId, true, "local"))
 		logger.WithField("device", utils.FmtNodeId(nodeId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
 	}
-	NotifyMainNetworkChanged()
+	g.NotifyNetworkChanged()
 }
 
 func (g *Network) LocalDeviceId() int64 {
@@ -213,6 +292,7 @@ func (g *Network) SaveToFile(filename string) error {
 func (g *Network) CopyNetwork() *Network {
 	network := Network{}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
+	network.networkId = g.networkId
 	network.localDeviceId = g.localDeviceId
 
 	nodes := g.Nodes()
@@ -230,8 +310,8 @@ func (g *Network) CopyNetwork() *Network {
 	return &network
 }
 
-func NewNetwork(localDeviceId int64) *Network {
-	network := Network{localDeviceId: localDeviceId}
+func NewNetwork(localDeviceId int64, networkId int) *Network {
+	network := Network{localDeviceId: localDeviceId, networkId: networkId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
 	if localDeviceId > 0 {
 		network.AddNode(NewNodeDevice(localDeviceId, true, "local"))
@@ -239,8 +319,8 @@ func NewNetwork(localDeviceId int64) *Network {
 	return &network
 }
 
-func NewNeworkFromFile(filename string, localDeviceId int64) (*Network, error) {
-	network := Network{localDeviceId: localDeviceId}
+func NewNeworkFromFile(filename string, localDeviceId int64, networkId int) (*Network, error) {
+	network := Network{localDeviceId: localDeviceId, networkId: networkId}
 	network.WeightedDirectedGraph = *simple.NewWeightedDirectedGraph(0, math.Inf(1))
 	err := network.readGraph(filename)
 	if err != nil {

@@ -1,6 +1,6 @@
 import { Card, CardContent, Grid, Typography } from "@mui/material";
 import { Button, DataTable, List, Title, useCreate, useGetOne } from "react-admin";
-import { NetworkGraph } from "./networkgraph";
+import { NetworkGraph } from "./NetworkGraph";
 
 
 export const Discovery = () => {

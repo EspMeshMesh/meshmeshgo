@@ -1,15 +1,14 @@
 package rpc
 
 import (
-	"bytes"
 	"context"
-	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"leguru.net/m/v2/graph"
 	mm "leguru.net/m/v2/meshmesh"
 	"leguru.net/m/v2/rpc/meshmesh"
+	"leguru.net/m/v2/utils"
 )
 
 func (s *Server) NodeInfo(_ context.Context, req *meshmesh.NodeInfoRequest) (*meshmesh.NodeInfoReply, error) {
@@ -29,9 +28,9 @@ func (s *Server) NodeInfo(_ context.Context, req *meshmesh.NodeInfoRequest) (*me
 
 	return &meshmesh.NodeInfoReply{
 		Id:           req.Id,
-		Tag:          string(cfg.Tag[:bytes.IndexByte(cfg.Tag, 0)]),
+		Tag:          utils.TruncateZeros(cfg.Tag),
 		Channel:      uint32(cfg.Channel),
-		Rev:          rev.Revision[:strings.IndexByte(rev.Revision, 0)],
+		Rev:          utils.TruncateZeros(rev.Revision),
 		IsAssociated: cfg.Flags&0x01 != 0,
 	}, nil
 }

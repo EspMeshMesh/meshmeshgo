@@ -1,0 +1,8 @@
+syntax = "proto3";
+package espmeshmesh;
+
+message NotificationBeacon {
+  uint32 target_address = 1;
+  repeated uint32 repeaters = 2; 
+  uint32 total_cost = 3;
+}

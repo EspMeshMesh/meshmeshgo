@@ -64,6 +64,18 @@ func (s router) Register(g gin.IRouter) {
 		linksGroup.DELETE("/:id", h.deleteLink)
 	}
 
+	autoNodesGroup := r.Group("/autoNodes")
+	{
+		autoNodesGroup.GET("", h.getAutoNodes)
+		autoNodesGroup.GET("/:id", h.getOneAutoNode)
+		autoNodesGroup.DELETE("/:id", h.deleteAutoNode)
+	}
+
+	autoLinksGroup := r.Group("/autoLinks")
+	{
+		autoLinksGroup.GET("", h.getAutoLinks)
+	}
+
 	neighborsGroup := r.Group("/neighbors")
 	{
 		neighborsGroup.GET("", h.getNeighbors)

@@ -30,7 +30,7 @@ func (h *Handler) nodeInfoGetCmd(m *MeshNode) error {
 	}
 	cfg := rep.(meshmesh.NodeConfigApiReply)
 
-	m.Revision = rev.Revision
+	m.Revision = utils.TruncateZeros(rev.Revision)
 	m.DevTag = utils.TruncateZeros(cfg.Tag)
 	m.Channel = int8(cfg.Channel)
 	m.TxPower = int8(cfg.TxPower)
@@ -43,11 +43,15 @@ func (h *Handler) nodeInfoGetCmd(m *MeshNode) error {
 
 func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *graph.Network) MeshNode {
 	jsonNode := MeshNode{
-		ID:       uint(dev.ID()),
-		Tag:      string(dev.Device().Tag()),
-		InUse:    dev.Device().InUse(),
-		Path:     graph.FmtNodePath(network, dev),
-		Firmware: []MeshNodeFirmware{},
+		ID:          uint(dev.ID()),
+		Tag:         string(dev.Device().Tag()),
+		InUse:       dev.Device().InUse(),
+		IsLocal:     dev.ID() == network.LocalDeviceId(),
+		FirmRev:     dev.Device().Firmware(),
+		LibVersion:  dev.Device().LibVersion(),
+		CompileTime: formatTimeForJson(dev.Device().CompileTime()),
+		LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
+		Path:        graph.FmtNodePath(network, dev),
 	}
 
 	if h.firmwareUploadProcedure == nil || h.firmwareUploadProcedure.IsComplete() {
@@ -55,6 +59,8 @@ func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *g
 			err := h.nodeInfoGetCmd(&jsonNode)
 			if err != nil {
 				jsonNode.Error = err.Error()
+			} else {
+				dev.Device().SetFirmware(jsonNode.Revision)
 			}
 		}
 	}
@@ -92,29 +98,12 @@ func (h *Handler) getNodes(c *gin.Context) {
 			InUse:   dev.Device().InUse(),
 			Path:    graph.FmtNodePath(network, dev),
 			IsLocal: dev.ID() == network.LocalDeviceId(),
+			FirmRev: dev.Device().Firmware(),
 		})
 	}
 
 	sort.Slice(jsonNodes, func(i, j int) bool {
-		switch p.SortType {
-		case sortTypeAsc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID < jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID < jsonNodes[j].ID
-		case sortTypeDesc:
-			switch p.SortBy {
-			case sortFieldTypeID:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			case sortFieldTypeNode:
-				return jsonNodes[i].ID > jsonNodes[j].ID
-			}
-			return jsonNodes[i].ID > jsonNodes[j].ID
-		}
-		return false
+		return jsonNodes[i].Sort(jsonNodes[j], p.SortType, p.SortBy)
 	})
 
 	jsonNodesOut := []MeshNode{}
@@ -156,7 +145,7 @@ func (h *Handler) createNode(c *gin.Context) {
 
 	dev := graph.NewNodeDevice(int64(req.ID), req.InUse, req.Tag)
 	network.AddNode(dev)
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
@@ -227,7 +216,7 @@ func (h *Handler) updateNode(c *gin.Context) {
 
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.InUse)
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	if req.Firmware != "" {
 		firmware, err := dataurl.DecodeString(req.Firmware)
@@ -300,7 +289,7 @@ func (h *Handler) deleteNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
 	network.RemoveNode(int64(id))
-	graph.NotifyMainNetworkChanged()
+	network.NotifyNetworkChanged()
 
 	c.JSON(http.StatusOK, jsonNode)
 }
