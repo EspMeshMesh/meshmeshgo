@@ -16,7 +16,7 @@ export const myFakeDataProvider = fakeDataProvider({
 export const dataProvider = withLifecycleCallbacks(simpleRestProvider('/api/v1'), [
     {
         resource: 'nodes',
-        beforeUpdate: async (params: any, _: DataProvider) => {
+        /*beforeUpdate: async (params: any, _: DataProvider) => {
             let base64firmware = null;
             const newFirmware = params.data.firmware;
             if (newFirmware.rawFile instanceof File) {
@@ -31,7 +31,7 @@ export const dataProvider = withLifecycleCallbacks(simpleRestProvider('/api/v1')
                     firmware: base64firmware,
                 },
             };
-        },
+        },*/
     }
 ]);
 
@@ -40,10 +40,10 @@ export const dataProvider = withLifecycleCallbacks(simpleRestProvider('/api/v1')
  * That's not the most optimized way to store images in production, but it's
  * enough to illustrate the idea of dataprovider decoration.
  */
-const convertFileToBase64 = (file: any) =>
+/*const convertFileToBase64 = (file: any) =>
     new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(file.rawFile);
-    });
+});*/
