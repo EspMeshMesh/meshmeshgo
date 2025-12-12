@@ -51,17 +51,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Generate and Publish Changelog
-        if: startsWith(github.ref, 'refs/tags/v')
-        run: bunx changelogithub
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Generate artifact attestation
         id: attest
         uses: actions/attest-build-provenance@v3
