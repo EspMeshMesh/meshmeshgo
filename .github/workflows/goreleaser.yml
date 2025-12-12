@@ -25,7 +25,6 @@ jobs:
         with:
           go-version: stable
           cache: true
-        run: go mod tidy
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
