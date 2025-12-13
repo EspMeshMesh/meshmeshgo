@@ -6,10 +6,6 @@ __debug_bin*
 *.bin
 *.exe
 *.ini
-./meshmeshgo
-./meshmeshgo.json
 backup/
-# Added by goreleaser init:
 dist/
-meshmeshgo
-meshmeshgo.json
+

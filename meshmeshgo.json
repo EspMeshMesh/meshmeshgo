@@ -1,0 +1,17 @@
+{
+    "WantHelp": false,
+    "ConfigFile": "meshmeshgo.json",
+    "SerialPortName": "/dev/ttyUSB0",
+    "SerialPortBaudRate": 115200,
+    "SerialIsEsp8266": false,
+    "VerboseLevel": 3,
+    "TargetNode": 0,
+    "DebugNodeAddr": "",
+    "RestBindAddress": ":4040",
+    "RpcBindAddress": "",
+    "BindAddress": "dynamic",
+    "BindPort": 6053,
+    "BasePortOffset": 20000,
+    "SizeOfPortsPool": 10000,
+    "EnableZeroconf": true
+  }
