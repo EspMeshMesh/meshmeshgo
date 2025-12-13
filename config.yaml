@@ -1,7 +1,7 @@
 name: "espMeshMesh Server"
 description: "The espMeshMesh Server"
 
-version: "0.1.0"
+version: "1.3.1"
 slug: "espMeshMeshgo"
 
 url: https://github.com/EspMeshMesh/meshmeshgo
@@ -51,11 +51,11 @@ init: false
 startup: "services"
 boot: "auto"
 
-#host_network: true
+host_network: true
 #homeassistant_api: true
 #$hassio_api: true
 #audio: true
-#usb: true
+usb: true
 #auth_api: true
 
 #uart: true
