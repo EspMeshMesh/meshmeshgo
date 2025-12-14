@@ -1,15 +1,43 @@
-import { Edit, TextInput, BooleanInput, TabbedForm, NumberInput, FormDataConsumer, Toolbar, SaveButton, DateTimeInput, DeleteButton } from "react-admin";
+import { Edit, TextInput, BooleanInput, TabbedForm, NumberInput, FormDataConsumer, Toolbar, SaveButton, DateTimeInput, DeleteButton, Button, useRecordContext, useNotify } from "react-admin";
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditNoteIcon from '@mui/icons-material/EditNote';
+import ReplayIcon from '@mui/icons-material/Replay';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Typography } from "@mui/material";
 import { formatNodeId } from "../utils";
+
+const RebootButton  = () => {
+    const record = useRecordContext();
+    const notify = useNotify();
+
+    const handleClick = () => {
+        fetch(`/api/v1/nodeCommands/${record?.id}/reboot`, {
+            method: 'GET',
+        }).then((r: Response) => {
+            if (r.ok) {
+                notify("Reboot successful");
+            } else {
+                return r.json().then((error: { message: string }) => {
+                    throw new Error(error.message);
+                });
+            }
+        }).catch((e) => {
+            notify("Reboot failed: " + e.message, { type: "error" });
+        });
+    }
+
+    return <Button label="Reboot" color="primary" variant="contained" onClick={handleClick}>
+        <ReplayIcon />
+    </Button>;
+}
 
 const CreateToolbar = () => {
     return (
         <Toolbar>
             <SaveButton label="Save changes" color="primary" variant="contained" icon={<EditNoteIcon />} />
             <Typography variant="h6" sx={{ flexGrow: 1 }}></Typography>
+            <RebootButton />
+            <Typography variant="h6" sx={{ width: 16 }}></Typography>
             <DeleteButton label="Delete" color="error" variant="contained" icon={<DeleteIcon />} />
         </Toolbar>
     );

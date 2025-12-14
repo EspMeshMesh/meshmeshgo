@@ -55,6 +55,11 @@ func (s router) Register(g gin.IRouter) {
 		nodesGroup.DELETE("/:id", h.deleteNode)
 	}
 
+	nodeCommandsGroup := r.Group("/nodeCommands")
+	{
+		nodeCommandsGroup.GET("/:id/reboot", h.rebootNode)
+	}
+
 	linksGroup := r.Group("/links")
 	{
 		linksGroup.GET("", h.getLinks)
