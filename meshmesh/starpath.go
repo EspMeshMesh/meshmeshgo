@@ -93,7 +93,7 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 
 		for i := range len(path) - 1 {
 			// new edge is: from:node[i] -> rssi[i] --> to:node[i+1]
-			s.refreshInputEdges(int64(path[i]), int64(path[i+1]), Rssi2weight(int16(v.PathRouting.Rssi[i])))
+			s.refreshInputEdges(int64(path[i]), int64(path[i+1]), CostToWeight(int16(v.PathRouting.Rssi[i])))
 		}
 
 		s.network.SaveToFile("starpath.graphml")
