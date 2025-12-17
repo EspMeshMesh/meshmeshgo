@@ -260,6 +260,7 @@ func (serialConn *SerialConnection) Read() {
 					inputBufferPos = 0
 				} else {
 					decodeState = waitStartByte
+					logger.Log().WithFields(logrus.Fields{"len": inputBufferPos, "data": hex.EncodeToString(inputBuffer[0:min(inputBufferPos, 10)])}).Trace("From serial")
 					logger.Log().WithFields(logrus.Fields{"receivedCrc16": receivedCrc16, "computedCrc16": computedCrc16}).Error("serial error: crc16 mismatch")
 					inputBufferPos = 0
 				}
@@ -533,14 +534,14 @@ func (serialConn *SerialConnection) openPort() error {
 		logger.Log().Info("SerialConnection.openPort: port already open")
 		return errors.New("port already open")
 	}
-	
+
 	if serialConn.pulseResetOnOpen {
 		logger.Log().Info("SerialConnection.openPort: pulse reset started")
 		if err := serialConn.pulseReset(); err != nil {
 			logger.Log().WithError(err).Warn("SerialConnection.openPort: pulse reset failed")
 		}
 	}
-	
+
 	var err error
 	mode := &serial.Mode{BaudRate: serialConn.baudRate}
 	serialConn.port, err = serial.Open(serialConn.portName, mode)
@@ -606,18 +607,18 @@ func (serialConn *SerialConnection) openPort() error {
 
 func NewSerial(portName string, baudRate int, isEsp8266 bool, pulseResetOnOpen bool, debug bool) (*SerialConnection, error) {
 	serial := &SerialConnection{
-		isPortOpen:  false,
-		port:        nil,
-		portName:    portName,
-		baudRate:    baudRate,
-		isEsp8266:   isEsp8266,
+		isPortOpen:       false,
+		port:             nil,
+		portName:         portName,
+		baudRate:         baudRate,
+		isEsp8266:        isEsp8266,
 		pulseResetOnOpen: pulseResetOnOpen,
-		txOneByteMs: int(float32(8) / float32(baudRate) * 1000000.0),
-		debug:       debug,
-		incoming:    make(chan []byte),
-		Sessions:    list.New(),
-		NextHandle:  1,
-		lastUseTime: time.Now(),
+		txOneByteMs:      int(float32(8) / float32(baudRate) * 1000000.0),
+		debug:            debug,
+		incoming:         make(chan []byte),
+		Sessions:         list.New(),
+		NextHandle:       1,
+		lastUseTime:      time.Now(),
 	}
 
 	return serial, serial.openPort()
