@@ -87,6 +87,16 @@ func Rssi2weight(rssi int16) float64 {
 	return math.Round(cost*100) / 100
 }
 
+func CostToWeight(cost int16) float64 {
+	if cost < 0.0 {
+		return Rssi2weight(cost)
+	} else if cost > 44 {
+		return float64(cost)
+	} else {
+		return float64(cost)
+	}
+}
+
 func neighborsFromGraph(g *gra.Network, n gra.NodeDevice, w map[int64]discWeights) error {
 	neighbors := g.From(n.ID())
 	for neighbors.Next() {
