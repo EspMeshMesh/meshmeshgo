@@ -38,6 +38,7 @@ func (s router) Register(g gin.IRouter) {
 	}))
 
 	g.GET("/", routeFrontend)
+	g.GET("/index.html", routeFrontend)
 
 	// use ginSwagger middleware to serve the API docs
 	g.GET("/swagger", func(c *gin.Context) {

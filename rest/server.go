@@ -4,12 +4,11 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"leguru.net/m/v2/managerui"
 	"leguru.net/m/v2/logger"
+	"leguru.net/m/v2/managerui"
 )
 
 func serveStaticFiles(g *gin.Engine) {
-	//g.Static("/manager", "./static")
 	g.StaticFS("/manager", http.FS(managerui.Assets))
 }
 
