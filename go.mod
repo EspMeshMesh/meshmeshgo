@@ -6,6 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/charmbracelet/log v0.4.0
+	github.com/gin-contrib/static v1.1.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-restruct/restruct v1.2.0-alpha
 	github.com/hashicorp/mdns v1.0.6

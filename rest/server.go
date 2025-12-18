@@ -1,15 +1,21 @@
 package rest
 
 import (
-	"net/http"
-
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/managerui"
 )
 
 func serveStaticFiles(g *gin.Engine) {
-	g.StaticFS("/manager", http.FS(managerui.Assets))
+	//g.StaticFS("/manager", http.FS(managerui.Assets))
+
+	fs, err := static.EmbedFolder(managerui.Assets, "data")
+	if err != nil {
+		logger.WithError(err).Error("Failed to embed folder")
+	} else {
+		g.Use(static.Serve("/", fs))
+	}
 }
 
 func StartRestServer(router Router, bindAddress string) {
@@ -19,10 +25,8 @@ func StartRestServer(router Router, bindAddress string) {
 	} else {
 		g = gin.New()
 	}
+
 	gin.SetMode(gin.ReleaseMode)
-	g.NoRoute(func(c *gin.Context) {
-		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte("<a href='/manager'>Go to manager</a>"))
-	})
 	serveStaticFiles(g)
 
 	router.Register(g)

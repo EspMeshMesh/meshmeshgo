@@ -37,9 +37,6 @@ func (s router) Register(g gin.IRouter) {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	g.GET("/", routeFrontend)
-	g.GET("/index.html", routeFrontend)
-
 	// use ginSwagger middleware to serve the API docs
 	g.GET("/swagger", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")

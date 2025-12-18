@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    outDir: "../managerui",
+    outDir: "../managerui/data",
     emptyOutDir: true,
     sourcemap: mode === "development",
   },
