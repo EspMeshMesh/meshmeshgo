@@ -20,7 +20,11 @@ func StartRestServer(router Router, bindAddress string) {
 		g = gin.New()
 	}
 	gin.SetMode(gin.ReleaseMode)
+	g.NoRoute(func(c *gin.Context) {
+		c.Data(http.StatusNotFound, "text/html; charset=utf-8", []byte("<a href='/manager'>Go to manager</a>"))
+	})
 	serveStaticFiles(g)
+
 	router.Register(g)
 	go g.Run(bindAddress)
 }
