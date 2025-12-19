@@ -55,7 +55,7 @@ func NewMultiMdnsService() *MultiMdnsService {
 	return &MultiMdnsService{services: make([]*mdns.MDNSService, 0)}
 }
 
-func setupMdns() {
+func setupMdns(network *gra.Network) {
 	if !mdnsConfig.zeroconfEnabled {
 		return
 	}
@@ -69,12 +69,11 @@ func setupMdns() {
 
 	mdnsServers = make([]*mdns.Server, 0)
 
-	network := gra.GetMainNetwork()
 	nodes := network.Nodes()
 	//multiService := NewMultiMdnsService()
 	for nodes.Next() {
 		node := nodes.Node().(gra.NodeDevice)
-		if node.Device().InUse() && !network.IsLocalDevice(node) && node.Device().Tag() != "" {
+		if node.Device().InUse() && !network.IsLocalDevice(node) {
 			var ips []net.IP = nil
 
 			if mdnsConfig.dynmicAddress {

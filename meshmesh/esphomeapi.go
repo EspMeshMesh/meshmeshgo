@@ -272,8 +272,8 @@ func (m *MultiServerApi) CloseConnection(addr MeshNodeId) {
 	}
 }
 
-func (m *MultiServerApi) MainNetworkChanged() {
-	nodes := graph.GetMainNetwork().Nodes()
+func (m *MultiServerApi) MainNetworkChanged(network *graph.Network) {
+	nodes := network.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
 		if node.Device().InUse() {
@@ -286,7 +286,7 @@ func (m *MultiServerApi) MainNetworkChanged() {
 			}
 			if !found {
 				logger.WithFields(logger.Fields{"node": utils.FmtNodeId(int64(node.ID()))}).Debug("MainNetworkChanged adding esphome connection to new node")
-				server, err := NewServerApi(m.serial, graph.GetMainNetwork(), MeshNodeId(node.ID()), &m.config)
+				server, err := NewServerApi(m.serial, network, MeshNodeId(node.ID()), &m.config)
 				if err != nil {
 					log.Error(err)
 				} else {
@@ -320,7 +320,7 @@ func (m *MultiServerApi) MainNetworkChanged() {
 func (m *MultiServerApi) StarPathProtocol(starpath *StarPath) {
 	m.starPath = starpath
 	starpath.network.AddNetworkChangedCallback(m.starPathNetworkChanged)
-	m.starPathNetworkChanged()
+	m.starPathNetworkChanged(starpath.network)
 }
 
 func (m *MultiServerApi) serverAddressExists(nodeId MeshNodeId) bool {
@@ -368,11 +368,11 @@ func (m *MultiServerApi) createApiAndOtaServers(nodeId MeshNodeId, network *grap
 	}
 }
 
-func (m *MultiServerApi) starPathNetworkChanged() {
-	newNodes := m.getNewNodes(m.starPath.network)
+func (m *MultiServerApi) starPathNetworkChanged(network *graph.Network) {
+	newNodes := m.getNewNodes(network)
 	for _, nodeId := range newNodes {
 		logger.WithFields(logger.Fields{"nodeId": nodeId}).Debug("starPathNetworkChanged adding new node to star path")
-		m.createApiAndOtaServers(nodeId, m.starPath.network)
+		m.createApiAndOtaServers(nodeId, network)
 	}
 }
 

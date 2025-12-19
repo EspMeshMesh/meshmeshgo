@@ -156,9 +156,9 @@ func SetMainNetwork(network *Network) {
 
 type Network struct {
 	simple.WeightedDirectedGraph
-	localDeviceId            int64
-	networkChancgedCallbacks []func()
-	networkId                int
+	localDeviceId           int64
+	networkChangedCallbacks []func(network *Network)
+	networkId               int
 }
 
 func (g *Network) EdgesTo(nodeId int64) graph.Edges {
@@ -179,13 +179,13 @@ func (g *Network) NetworkId() int {
 	return g.networkId
 }
 
-func (g *Network) AddNetworkChangedCallback(cb func()) {
-	g.networkChancgedCallbacks = append(g.networkChancgedCallbacks, cb)
+func (g *Network) AddNetworkChangedCallback(cb func(network *Network)) {
+	g.networkChangedCallbacks = append(g.networkChangedCallbacks, cb)
 }
 
 func (g *Network) NotifyNetworkChanged() {
-	for _, cb := range g.networkChancgedCallbacks {
-		cb()
+	for _, cb := range g.networkChangedCallbacks {
+		cb(g)
 	}
 }
 

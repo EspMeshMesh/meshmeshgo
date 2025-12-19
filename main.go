@@ -89,9 +89,13 @@ func initConfig() *config.Config {
 	return c
 }
 
-func networkChangedCallback() {
-	setupMdns()
-	gra.GetMainNetwork().SaveToFile(graphFilename)
+func mainNetworkChangedCallback(network *gra.Network) {
+	//setupMdns()
+	network.SaveToFile(graphFilename)
+}
+
+func starPathNetworkChangedCallback(network *gra.Network) {
+	setupMdns(network)
 }
 
 func initNetwork(localNodeId int64) *gra.Network {
@@ -197,7 +201,7 @@ func main() {
 
 	// Init main network graph
 	gra.SetMainNetwork(initNetwork(int64(serialPort.LocalNode)))
-	gra.GetMainNetwork().AddNetworkChangedCallback(networkChangedCallback)
+	gra.GetMainNetwork().AddNetworkChangedCallback(mainNetworkChangedCallback)
 	// Init star path network grpah
 	starPath := meshmesh.NewStarPath(serialPort)
 
@@ -209,7 +213,7 @@ func main() {
 		apiBasePort:     config.BasePortOffset,
 		apiPortsSpan:    config.SizeOfPortsPool,
 	})
-	setupMdns()
+	setupMdns(starPath.GetNetwork())
 	// Init node for spcific debug
 	initDebugNode(config)
 	gra.PrintTable(gra.GetMainNetwork())
