@@ -22,10 +22,10 @@ import { ShowGraph } from './showgraph/ShowGraph';
 
 export const App = () => (
     <Admin layout={Layout} dataProvider={dataProvider} title="Mesh Network">
-        <Resource name="nodes" list={MeshNodesList} edit={MeshNodeEdit} create={MeshNodeCreate} icon={HubIcon} options={{ label: "Static nodes" }} />
-        <Resource name="links" list={MeshLinksList} edit={MeshLinkEdit} create={MeshLinkCreate} icon={LinkIcon} options={{ label: "Static links" }} />
         <Resource name="autoNodes" list={MeshAutoNodesList} edit={MeshAutoNodeEdit} icon={HubIcon} options={{ label: "Dynamic nodes" }}/>
         <Resource name="autoLinks" list={MeshAutoLinksList} icon={LinkIcon} options={{ label: "Dynamic links" }}/>
+        <Resource name="nodes" list={MeshNodesList} edit={MeshNodeEdit} create={MeshNodeCreate} icon={HubIcon} options={{ label: "Static nodes" }} />
+        <Resource name="links" list={MeshLinksList} edit={MeshLinkEdit} create={MeshLinkCreate} icon={LinkIcon} options={{ label: "Static links" }} />
         <Resource name="esphomeServers" list={EspHomeServerList} options={{ label: "EspHome Servers" }} />
         <Resource name="esphomeConnections" list={EsphomeClientsList} options={{ label: "EspHome Clients" }} />
         <Resource name="neighbors" />
