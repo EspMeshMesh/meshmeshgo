@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -32,6 +31,7 @@ type Config struct {
 
 func NewConfig() (*Config, error) {
 	var err error
+
 	config := Config{
 		WantHelp:           false,
 		VerboseLevel:       0,
@@ -72,10 +72,10 @@ func NewConfig() (*Config, error) {
 				Usage:       "Set if the coordinator is an esp8266",
 				Destination: &config.SerialIsEsp8266,
 			},
-			&cli.BoolFlag{
-				Name:    "verbose",
-				Aliases: []string{"v"},
-				Count:   &config.VerboseLevel,
+			&cli.IntFlag{
+				Name:        "verbose",
+				Aliases:     []string{"v"},
+				Destination: &config.VerboseLevel,
 			},
 			&cli.IntFlag{
 				Name:        "target",
@@ -156,18 +156,23 @@ func NewConfig() (*Config, error) {
 	}
 
 	if _, err = os.Stat(config.ConfigFile); err == nil {
-		data, err := os.ReadFile(config.ConfigFile)
+		// If the config file exists, read it
+		var data []byte
+		data, err = os.ReadFile(config.ConfigFile)
 		if err == nil {
 			err = json.Unmarshal(data, &config)
-			if err != nil {
-				logger.WithError(err).Fatal("Failed to unmarshal config file")
-			}
+		}
+	} else {
+		// If the config file does not exist, create it
+		var data []byte
+		data, err = json.MarshalIndent(&config, "", "  ")
+		if err == nil {
+			err = os.WriteFile(config.ConfigFile, data, 0644)
 		}
 	}
 
 	if err != nil {
-		res2B, _ := json.MarshalIndent(&config, "", "  ")
-		fmt.Println(string(res2B))
+		// Exit program with error
 		logger.Log().Fatal(err)
 	}
 
