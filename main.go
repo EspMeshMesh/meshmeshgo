@@ -171,16 +171,17 @@ func localNodeIdChangedCallback(meshNodeId meshmesh.MeshNodeId) {
 // @schemes http
 
 func main() {
+	logger.SetLevel(logrus.InfoLevel)
 	getBuildInfo()
 	go waitForTermination()
 
-	fmt.Printf("Starting program: %s\n", programName)
-	fmt.Println(programDescription)
-	logger.WithFields(logger.Fields{"vcsHash": vcsHash,
-		"vcsTime":  vcsTime,
-		"vcsDirty": vcsDirty}).Info("Startup information")
+	logger.WithFields(logger.Fields{"programName": programName}).Info(programDescription)
+	logger.WithFields(logger.Fields{"vcsHash": vcsHash, "vcsTime": vcsTime, "vcsDirty": vcsDirty}).Info("Startup information")
 
 	config := initConfig()
+	if config.DataFolder != "" {
+		os.Chdir(config.DataFolder)
+	}
 
 	logger.WithFields(logger.Fields{"portName": config.SerialPortName, "baudRate": config.SerialPortBaudRate}).Debug("Opening serial port")
 
@@ -204,6 +205,7 @@ func main() {
 	gra.GetMainNetwork().AddNetworkChangedCallback(mainNetworkChangedCallback)
 	// Init star path network grpah
 	starPath := meshmesh.NewStarPath(serialPort)
+	starPath.GetNetwork().AddNetworkChangedCallback(starPathNetworkChangedCallback)
 
 	// Zeroconf and mdns setup
 	setMdnsConfig(MdnsServiceConfig{

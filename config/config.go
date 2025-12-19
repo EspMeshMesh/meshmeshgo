@@ -12,11 +12,12 @@ import (
 type Config struct {
 	WantHelp           bool
 	ConfigFile         string
+	DataFolder         string `json:"DataFolder"`
 	SerialPortName     string `json:"SerialPortName"`
 	SerialPortBaudRate int    `json:"SerialPortBaudRate"`
 	SerialIsEsp8266    bool   `json:"SerialIsEsp8266"`
-	SerialShouldRetry  bool		`json:"SerialShouldRetry"`
-	SerialResetOnInit  bool		`json:"SerialResetOnInit"`
+	SerialShouldRetry  bool   `json:"SerialShouldRetry"`
+	SerialResetOnInit  bool   `json:"SerialResetOnInit"`
 	VerboseLevel       int    `json:"VerboseLevel"`
 	TargetNode         int    `json:"TargetNode"`
 	DebugNodeAddr      string `json:"DebugNodeAddr"`
@@ -32,7 +33,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	var err error
 	config := Config{
-		WantHelp:           true,
+		WantHelp:           false,
 		VerboseLevel:       0,
 		RestBindAddress:    ":4040",
 		BindAddress:        "dynamic",
@@ -43,8 +44,9 @@ func NewConfig() (*Config, error) {
 		SerialPortName:     "/dev/ttyUSB0",
 		SerialPortBaudRate: 460800,
 		SerialShouldRetry:  true,
-		SerialResetOnInit:	false,
+		SerialResetOnInit:  false,
 		EnableZeroconf:     false,
+		DataFolder:         "",
 	}
 
 	app := &cli.App{
@@ -130,6 +132,12 @@ func NewConfig() (*Config, error) {
 				Value:       config.ConfigFile,
 				Destination: &config.ConfigFile,
 			},
+			&cli.StringFlag{
+				Name:        "data_folder",
+				Value:       config.DataFolder,
+				Usage:       "Data folder for the meshmeshgo",
+				Destination: &config.DataFolder,
+			},
 		},
 		Action: func(cCtx *cli.Context) error {
 			config.WantHelp = false
@@ -143,11 +151,14 @@ func NewConfig() (*Config, error) {
 
 	if _, err = os.Stat(config.ConfigFile); err == nil {
 		data, err := os.ReadFile(config.ConfigFile)
-		fmt.Println("Data: " + string(data))
 		if err == nil {
-			json.Unmarshal(data, &config)
+			err = json.Unmarshal(data, &config)
+			if err != nil {
+				logger.WithError(err).Fatal("Failed to unmarshal config file")
+			}
 		}
 	}
+
 	if err != nil {
 		res2B, _ := json.MarshalIndent(&config, "", "  ")
 		fmt.Println(string(res2B))
