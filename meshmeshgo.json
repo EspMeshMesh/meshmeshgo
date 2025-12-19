@@ -13,5 +13,6 @@
     "BindPort": 6053,
     "BasePortOffset": 20000,
     "SizeOfPortsPool": 10000,
-    "EnableZeroconf": true
+    "EnableZeroconf": true,
+    "DataFolder": ""
   }
