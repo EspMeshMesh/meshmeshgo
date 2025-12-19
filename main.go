@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	programName        = "meshmeshgo"
-	programDescription = "hub server for meshmesh network"
-	graphFilename      = "meshmesh.graphml"
+	programName           = "meshmeshgo"
+	programDescription    = "hub server for meshmesh network"
+	graphFilename         = "meshmesh.graphml"
+	starPathGraphFilename = "starpath.graphml"
 )
 
 var (
@@ -96,6 +97,7 @@ func mainNetworkChangedCallback(network *gra.Network) {
 
 func starPathNetworkChangedCallback(network *gra.Network) {
 	setupMdns(network)
+	network.SaveToFile(starPathGraphFilename)
 }
 
 func initNetwork(localNodeId int64) *gra.Network {
@@ -204,7 +206,7 @@ func main() {
 	gra.SetMainNetwork(initNetwork(int64(serialPort.LocalNode)))
 	gra.GetMainNetwork().AddNetworkChangedCallback(mainNetworkChangedCallback)
 	// Init star path network grpah
-	starPath := meshmesh.NewStarPath(serialPort)
+	starPath := meshmesh.NewStarPath(serialPort, starPathGraphFilename)
 	starPath.GetNetwork().AddNetworkChangedCallback(starPathNetworkChangedCallback)
 
 	// Zeroconf and mdns setup

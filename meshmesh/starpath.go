@@ -11,10 +11,6 @@ import (
 	"leguru.net/m/v2/utils"
 )
 
-const (
-	starPathGraphFilename = "starpath.graphml"
-)
-
 type StarPath struct {
 	serial  *SerialConnection
 	network *graph.Network
@@ -96,32 +92,31 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 			s.refreshInputEdges(int64(path[i]), int64(path[i+1]), CostToWeight(int16(v.PathRouting.Rssi[i])))
 		}
 
-		s.network.SaveToFile("starpath.graphml")
-
+		s.network.NotifyNetworkChanged()
 	}
 }
 
 /*
 Init star path network graph from cache file or create a new one if not exists
 */
-func initNetwork(localNodeId int64) *graph.Network {
+func initNetwork(localNodeId int64, filename string) *graph.Network {
 	var network *graph.Network
-	if _, err := os.Stat(starPathGraphFilename); err == nil {
-		network, err = graph.NewNeworkFromFile(starPathGraphFilename, localNodeId, graph.NETWORK_ID_STARPATH)
+	if _, err := os.Stat(filename); err == nil {
+		network, err = graph.NewNeworkFromFile(filename, localNodeId, graph.NETWORK_ID_STARPATH)
 		if err != nil {
 			logger.Log().Fatal("Graph read error: ", err)
 		}
 	} else {
 		network = graph.NewNetwork(localNodeId, graph.NETWORK_ID_STARPATH)
-		network.SaveToFile(starPathGraphFilename)
+		network.SaveToFile(filename)
 	}
 	return network
 }
 
-func NewStarPath(serial *SerialConnection) *StarPath {
+func NewStarPath(serial *SerialConnection, cacheFile string) *StarPath {
 	starPath := &StarPath{
 		serial:  serial,
-		network: initNetwork(int64(serial.LocalNode)),
+		network: initNetwork(int64(serial.LocalNode), cacheFile),
 	}
 	starPath.serial.ProtoPresentationFn = starPath.handleProtoPresentationRxReply
 	return starPath

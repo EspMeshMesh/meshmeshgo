@@ -132,6 +132,12 @@ func NewConfig() (*Config, error) {
 				Value:       config.ConfigFile,
 				Destination: &config.ConfigFile,
 			},
+			&cli.BoolFlag{
+				Name:        "enable_zeroconf",
+				Value:       config.EnableZeroconf,
+				Usage:       "Enable zeroconf",
+				Destination: &config.EnableZeroconf,
+			},
 			&cli.StringFlag{
 				Name:        "data_folder",
 				Value:       config.DataFolder,

@@ -7,7 +7,7 @@ import (
 	"leguru.net/m/v2/managerui"
 )
 
-func Logger() gin.HandlerFunc {
+/*func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		keys := make([]string, 0, len(c.Request.Header))
 		for k := range c.Request.Header {
@@ -18,7 +18,7 @@ func Logger() gin.HandlerFunc {
 			logger.WithField("key", k).WithField("value", c.Request.Header[k]).Info("Request header")
 		}
 	}
-}
+}*/
 
 func serveStaticFiles(g *gin.Engine) {
 	//g.StaticFS("/manager", http.FS(managerui.Assets))
@@ -40,7 +40,7 @@ func StartRestServer(router Router, bindAddress string) {
 	}
 
 	gin.SetMode(gin.ReleaseMode)
-	g.Use(Logger())
+	//g.Use(Logger())
 	serveStaticFiles(g)
 
 	router.Register(g)
