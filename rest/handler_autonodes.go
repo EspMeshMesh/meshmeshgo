@@ -8,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"leguru.net/m/v2/graph"
-	"leguru.net/m/v2/logger"
 )
 
 // @Id getAutoNodes
@@ -36,7 +35,6 @@ func (h *Handler) getAutoNodes(c *gin.Context) {
 
 	for nodes.Next() {
 		dev := nodes.Node().(graph.NodeDevice)
-		logger.Debug("firmware name: %s", dev.Device().Firmware())
 		// Create MeshNode struct
 		jsonNodes = append(jsonNodes, MeshNode{
 			ID:          uint(dev.ID()),
