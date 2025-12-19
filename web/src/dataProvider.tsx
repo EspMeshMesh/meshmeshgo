@@ -13,7 +13,7 @@ export const myFakeDataProvider = fakeDataProvider({
     ],
 })
 
-export const dataProvider = withLifecycleCallbacks(simpleRestProvider('/api/v1'), [
+export const dataProvider = withLifecycleCallbacks(simpleRestProvider('api/v1'), [
     {
         resource: 'nodes',
         /*beforeUpdate: async (params: any, _: DataProvider) => {
