@@ -14,6 +14,7 @@ The main task of this software is to make a bridge between the MeshMesh network 
 The getting started tutorial that uses the new autoforming netowrk can be found on this page.
 
 1. [Fast Getting Started](docs/tutorial/getting_started_starpath.md)
+2. [Running with Docker](docs/tutorial/docker_guide.md)
 
 ## Other Getting started tutorials
 
@@ -21,7 +22,6 @@ The getting started tutorial that uses the new autoforming netowrk can be found 
 2. [Getting Started](docs/tutorial/getting_started.md)
 3. [No HUB communication](docs/tutorial/no_hub_commuication.md)
 4. [OTA firmware upload](docs/tutorial/ota_firmware_upload.md)
-5. [Running with Docker](docs/tutorial/docker_guide.md)
 
 ## Mesh network description
 

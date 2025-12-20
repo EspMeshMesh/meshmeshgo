@@ -1,17 +1,12 @@
 services:
   meshmeshgo:
-    build: .
+    image: ghcr.io/espmeshmesh/amd64-meshmeshgo-addon:latest
     container_name: meshmeshgo
     network_mode: host
     privileged: true
-    environment:
-      - MESHMESH_RESTART_DELAY=10
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
     volumes:
-      - ./meshmeshgo.json:/root/meshmeshgo.json:rw
-      - ./meshmesh.graphml:/root/meshmesh.graphml:rw
-    # Uncomment lines below when running without privileged mode [NOT RECOMMENDED CURRENTLY]
-    # devices:
-    #   - /dev/ttyUSB0:/dev/ttyUSB0       # your gateway device
-    # cap_add:
-    #   - NET_ADMIN                       # allow VLAN creation
+      - ./:/data:rw
     restart: unless-stopped
+    
