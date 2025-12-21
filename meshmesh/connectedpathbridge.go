@@ -19,6 +19,7 @@ type ConnectionPathBridgeDriver interface {
 	Socket2Serial(buffer *bytes.Buffer, connectedPath *ConnPathConnection, stats *EspApiConnectionStats)
 }
 
+// ConnectionPathBridge is a bridge between a socket and a connected path serial protocol
 type ConnectionPathBridge struct {
 	Stats           *EspApiConnectionStats
 	tmpBuffer       *bytes.Buffer
@@ -35,6 +36,7 @@ type ConnectionPathBridge struct {
 	driver          ConnectionPathBridgeDriver
 }
 
+// Called when the serial data is available
 func (c *ConnectionPathBridge) serialDataAvailable(data []byte) {
 	logger.WithFields(logger.Fields{
 		"handle": c.connectedPath.handle,
@@ -48,24 +50,33 @@ func (c *ConnectionPathBridge) serialDataAvailable(data []byte) {
 	}
 }
 
+// Close the bridge a prepare to dispose
 func (c *ConnectionPathBridge) close() {
 	c.socketOpen = false
+	// Close the socket
 	c.socket.Close()
+	// Wait for the readFromSocketRoutine to finish
 	c.socketWaitGroup.Wait()
 	c.Stats.Stop()
+	// Send a disconnect request to the serial connected path
 	c.connectedPath.Disconnect()
+	// Call the client closed callback to remove myself from the clients list
 	c.clientClosed(c)
+
 	logger.Log().Debug("ConnectionPathBridgeBase.close")
 }
 
+// Called when the handshake is finished and the connection is active
 func (c *ConnectionPathBridge) connectionActive() {
 	c.finishHandshake(true)
 }
 
+// Called when the connection is mark as invalid beacouse an error
 func (c *ConnectionPathBridge) connectionInvalid() {
 	c.close()
 }
 
+// Remove callbacks
 func (c *ConnectionPathBridge) Dispose() {
 	c.connectedPath.Dispose()
 }
