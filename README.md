@@ -25,7 +25,7 @@ The getting started tutorial that uses the new autoforming netowrk can be found 
 
 ## Mesh network description
 
-MeshMesh is an implementation of a protocol for mesh communication of ESPHome nodes framework that works on ESP8266 and ESP32 based boards. The protocol is based on 802.11B frame format and is compatible with the radio equipment of chips such as ESP32 and ESP8266.
+MeshMesh is an 5implementation of a protocol for mesh communication of ESPHome nodes framework that works on ESP8266 and ESP32 based boards. The protocol is based on 802.11B frame format and is compatible with the radio equipment of chips such as ESP32 and ESP8266.
 
 ## Mesh network capabilities
 

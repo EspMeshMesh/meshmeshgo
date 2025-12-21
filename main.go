@@ -224,8 +224,9 @@ func main() {
 	// Handle DiscAssociateReply received from other nodes
 	serialPort.DiscAssociateFn = handleDiscAssociateReply
 
+	connectedPath2Serial := meshmesh.NewConnectedPath2Serial(serialPort)
 	// Initialize Esphome to HomeAssistant Server
-	esphomeapi := meshmesh.NewMultiServerApi(serialPort, meshmesh.ServerApiConfig{
+	esphomeapi := meshmesh.NewMultiSocketServer(connectedPath2Serial, meshmesh.ServerApiConfig{
 		BindAddress:     config.BindAddress,
 		BindPort:        config.BindPort,
 		BasePortOffset:  config.BasePortOffset,

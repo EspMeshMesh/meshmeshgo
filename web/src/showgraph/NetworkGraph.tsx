@@ -71,6 +71,8 @@ export const NetworkGraph = ({networkType}: NetworkGraphProps) => {
             nodeLabel={node => node.label}
             nodeColor={node => node.is_local ? 'yellow' : 'blue'}
             linkLabel={link => (link.value * 100).toString()+'%'}
+            width={window.innerWidth-300}
+            height={650}
         />
     );
 };

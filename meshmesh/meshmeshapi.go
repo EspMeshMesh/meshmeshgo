@@ -51,27 +51,33 @@ func NewSerialSession(request *ApiFrame) (*SerialSession, error) {
 	return &s, nil
 }
 
+type FrameReceivedCallback struct {
+	FrameType    uint8
+	FrameSubtype uint8
+	Callback     func(data any)
+}
+
 type SerialConnection struct {
-	isPortOpen           bool
-	port                 serial.Port
-	portName             string
-	baudRate             int
-	isEsp8266            bool
-	pulseResetOnOpen     bool
-	txOneByteMs          int
-	debug                bool
-	incoming             chan []byte
-	session              *SerialSession
-	Sessions             *list.List
-	SessionsLock         sync.Mutex
-	NextHandle           uint16
-	LocalNode            uint32
-	ConnPathFn           func(*ConnectedPathApiReply)
-	DiscAssociateFn      func(*DiscAssociateApiReply, *SerialConnection)
-	NodePresentstionFn   func(*NodePresentationApiReply, *SerialConnection)
-	ProtoPresentationFn  func(*pb.NodePresentationRx, *SerialConnection)
-	localNodeIdChangedCb func(meshNodeId MeshNodeId)
-	lastUseTime          time.Time
+	isPortOpen            bool
+	port                  serial.Port
+	portName              string
+	baudRate              int
+	isEsp8266             bool
+	pulseResetOnOpen      bool
+	txOneByteMs           int
+	debug                 bool
+	incoming              chan []byte
+	session               *SerialSession
+	Sessions              *list.List
+	SessionsLock          sync.Mutex
+	NextHandle            uint16
+	LocalNode             uint32
+	DiscAssociateFn       func(*DiscAssociateApiReply, *SerialConnection)
+	NodePresentstionFn    func(*NodePresentationApiReply, *SerialConnection)
+	ProtoPresentationFn   func(*pb.NodePresentationRx, *SerialConnection)
+	FrameReceivedCallback []FrameReceivedCallback
+	localNodeIdChangedCb  func(meshNodeId MeshNodeId)
+	lastUseTime           time.Time
 }
 
 const (
@@ -121,20 +127,6 @@ func (serialConn *SerialConnection) ReadFrame(buffer []byte) {
 			}
 			logger.Log().WithFields(logrus.Fields{"from": lo.From}).Debug(lo.Line)
 		}
-	case connectedPathApiReply:
-		// Handle ConnectedPath packets next
-		v, err := frame.Decode()
-		if err != nil {
-			logger.Log().Error("Can't decode incoming connectedpath packet 1/2")
-		} else {
-			c, ok := v.(ConnectedPathApiReply)
-			if !ok {
-				logger.Log().Error("Can't decode incoming connectedpath packet 2/2")
-			}
-			if serialConn.ConnPathFn != nil {
-				serialConn.ConnPathFn(&c)
-			}
-		}
 	default:
 		// Handle session pacekts next
 		if serialConn.session != nil {
@@ -171,6 +163,17 @@ func (serialConn *SerialConnection) ReadFrame(buffer []byte) {
 					serialConn.ProtoPresentationFn(&vv, serialConn)
 				}
 			} else {
+				for _, callback := range serialConn.FrameReceivedCallback {
+					if frame.AssertType(callback.FrameType, callback.FrameSubtype) {
+						decoded, err := frame.Decode()
+						if err != nil {
+							logger.Log().Error("Can't decode incoming connectedpath packet 1/2")
+						} else {
+							callback.Callback(decoded)
+						}
+						return
+					}
+				}
 				logger.Log().WithField("type", fmt.Sprintf("%02X", buffer[0])).Error("Unused packet received")
 			}
 		}
@@ -603,6 +606,10 @@ func (serialConn *SerialConnection) openPort() error {
 		Info("Valid local node found")
 
 	return nil
+}
+
+func (serialConn *SerialConnection) AddFrameReceivedCallback(frameType uint8, frameSubtype uint8, callback func(data any)) {
+	serialConn.FrameReceivedCallback = append(serialConn.FrameReceivedCallback, FrameReceivedCallback{FrameType: frameType, FrameSubtype: frameSubtype, Callback: callback})
 }
 
 func NewSerial(portName string, baudRate int, isEsp8266 bool, pulseResetOnOpen bool, debug bool) (*SerialConnection, error) {

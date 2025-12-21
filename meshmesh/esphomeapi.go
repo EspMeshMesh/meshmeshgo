@@ -1,11 +1,8 @@
 package meshmesh
 
 import (
-	"bytes"
 	"fmt"
 	"net"
-	"sync"
-	"time"
 
 	"github.com/charmbracelet/log"
 	"golang.org/x/exp/slices"
@@ -16,161 +13,52 @@ import (
 
 var _allStats *EspApiStats
 
-const (
+/*const (
 	esphomeapiWaitPacketHead int = 0
 	esphomeapiWaitPacketSize int = 1
 	esphomeapiWaitPacketData int = 3
-)
+)*/
 
 const (
 	fixedApiRemotePort int = 6053
 	fixedOtaRemotePort int = 3232
 )
 
-type NetworkConnection interface {
-	MeshProtocol() *ConnPathConnection
-	FinishHandshake(result bool)
-	ForwardData(data []byte) error
-	Close()
-}
-
-type NetworkConnectionStruct struct {
-	Stats           *EspApiConnectionStats
-	tmpBuffer       *bytes.Buffer
-	inBuffer        *bytes.Buffer
-	socketOpen      bool
-	socket          net.Conn
-	socketWaitGroup sync.WaitGroup
-	meshprotocol    *ConnPathConnection
-	reqAddress      MeshNodeId
-	reqPort         int
-	debugThisNode   bool
-	timeout         time.Time
-	clientClosed    func(client NetworkConnection)
-}
-
-func (c *NetworkConnectionStruct) MeshProtocol() *ConnPathConnection {
-	return c.meshprotocol
-}
-
-func (c *NetworkConnectionStruct) startHandshake(addr MeshNodeId, port int) error {
-	c.reqAddress = addr
-	c.reqPort = port
-	err := c.meshprotocol.OpenConnectionAsync(addr, uint16(port))
-	if err == nil {
-		c.Stats.Start()
-		if addr == MeshNodeId(0) {
-			c.debugThisNode = true
-			logger.WithFields(logger.Fields{"id": fmt.Sprintf("%02X", addr)}).Info("startHandshake and debug for node")
-		}
-	}
-	return err
-}
-
-func (c *NetworkConnectionStruct) FinishHandshake(result bool) {
-	logger.WithField("res", result).Debug("finishHandshake")
-	if !result {
-		logger.WithFields(logger.Fields{"addr": c.reqAddress, "port": c.reqPort, "err": nil}).
-			Warning("ApiConnection.finishHandshake failed")
-	} else {
-		logger.WithFields(logger.Fields{"addr": c.reqAddress, "port": c.reqPort, "handle": c.meshprotocol.handle}).
-			Info("ApiConnection.handshake OpenConnection succesfull")
-		c.flushBuffer(c.tmpBuffer)
-		c.Stats.GotHandle(c.meshprotocol.handle)
-	}
-}
-
-func (c *NetworkConnectionStruct) flushBuffer(buffer *bytes.Buffer) {
-	if buffer.Len() > 0 {
-		logger.WithFields(logger.Fields{"handle": c.meshprotocol.handle, "len": buffer.Len()}).
-			Trace(fmt.Sprintf("flushBuffer: HA-->SE: %s", utils.EncodeToHexEllipsis(buffer.Bytes(), 32)))
-
-		chunks := (buffer.Len()-1)/512 + 1
-
-		for i := 0; i < chunks; i++ {
-			chunk := buffer.Next(512)
-			err := c.meshprotocol.SendData(chunk)
-			if err != nil {
-				logger.Log().Error(fmt.Sprintf("Error writing on socket: %s", err.Error()))
-			}
-			if c.meshprotocol.serial.isEsp8266 {
-				sleepTime := c.meshprotocol.serial.txOneByteMs * (len(chunk) * 25)
-				time.Sleep(time.Duration(sleepTime) * time.Microsecond)
-			}
-		}
-
-		//client.meshprotocol.SendData([]byte{})
-
-		c.Stats.SentBytes(buffer.Len())
-		buffer.Reset()
-	}
-}
-
-func NewNetworkConnectionStruct(socket net.Conn, serial *SerialConnection, network *graph.Network, addr MeshNodeId, port int, closedCb func(NetworkConnection)) NetworkConnectionStruct {
-	return NetworkConnectionStruct{
-		meshprotocol: NewConnPathConnection(serial, network),
-		socketOpen:   true,
-		socket:       socket,
-		tmpBuffer:    bytes.NewBuffer([]byte{}),
-		inBuffer:     bytes.NewBuffer([]byte{}),
-		timeout:      time.Now(),
-		clientClosed: closedCb,
-		Stats:        _allStats.Stats(addr),
-	}
-}
-
 type ServerApi struct {
 	Address       MeshNodeId
-	Clients       []NetworkConnection
+	Clients       []*ConnectionPathBridge
 	listener      net.Listener
 	listenAddress string
 	network       *graph.Network
+}
+
+func (s *ServerApi) connectionFactory(remotePort int) ConnectionPathBridgeDriver {
+	var client ConnectionPathBridgeDriver = nil
+
+	if remotePort == fixedApiRemotePort {
+		client = NewApiConnection()
+	} else {
+		client = NewOtaConnection()
+	}
+
+	return client
 }
 
 func (s *ServerApi) GetListenAddress() string {
 	return s.listenAddress
 }
 
-func (s *ServerApi) HandleConnectedPathReply(v *ConnectedPathApiReply) bool {
-	handled := false
-	for _, client := range s.Clients {
-		if client.MeshProtocol().handle == v.Handle {
-			handled = true
-			if v.Command == connectedPathSendDataRequest {
-				if len(v.Data) > 0 {
-					err := client.ForwardData(v.Data)
-					if err != nil {
-						logger.Printf("HandleConnectedPathReply: ForwardData error on handle %d.", v.Handle)
-						client.Close()
-					}
-				}
-			} else {
-				oldConnState := client.MeshProtocol().connState
-				client.MeshProtocol().HandleIncomingReply(v)
-				if oldConnState != client.MeshProtocol().connState {
-					if client.MeshProtocol().connState == connPathConnectionStateActive {
-						client.FinishHandshake(true)
-					}
-					if client.MeshProtocol().connState == connPathConnectionStateInvalid {
-						client.Close()
-					}
-				}
-			}
-		}
-	}
-	return handled
-}
-
-func (s *ServerApi) ClientClosedCb(client NetworkConnection) {
+func (s *ServerApi) ClientClosedCb(client *ConnectionPathBridge) {
 	// Remove client from clients list
+	client.Dispose()
 	idx := slices.Index(s.Clients, client)
 	if idx >= 0 {
 		s.Clients = append(s.Clients[:idx], s.Clients[idx+1:]...)
 	}
-	logger.WithFields(logger.Fields{"handle": client.MeshProtocol().handle}).Info("Closed EspHomeApi connection")
+	logger.Info("Closed EspHomeApi connection")
 }
 
-func (s *ServerApi) ListenAndServe(serial *SerialConnection, remotePort int) {
+func (s *ServerApi) ListenAndServe(serialProxy *ConnectedPath2Serial, remotePort int) {
 	for {
 		socket, err := s.listener.Accept()
 		if err != nil {
@@ -180,32 +68,21 @@ func (s *ServerApi) ListenAndServe(serial *SerialConnection, remotePort int) {
 
 		logger.WithFields(logger.Fields{"nodeId": s.Address, "active": len(s.Clients)}).Debug("EspHome connection accepted")
 
-		if remotePort == fixedApiRemotePort {
-			client, err := NewApiConnection(socket, serial, s.network, s.Address, remotePort, s.ClientClosedCb)
-			if err != nil {
-				logger.Error(err)
-				socket.Close()
-			} else {
-				s.Clients = append(s.Clients, client)
-				logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(s.Address)), "clients": len(s.Clients)}).Debug("Added new client")
-			}
+		driver := s.connectionFactory(remotePort)
+		client, err := NewConnectionPathBridge(socket, serialProxy, s.network, s.Address, remotePort, driver, s.ClientClosedCb)
+		if err == nil {
+			s.Clients = append(s.Clients, client)
+			logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(s.Address)), "clients": len(s.Clients)}).Debug("Added new client")
 		} else {
-			client, err := NewOtaConnection(socket, serial, s.network, s.Address, remotePort, s.ClientClosedCb)
-			if err != nil {
-				logger.Error(err)
-				socket.Close()
-			} else {
-				s.Clients = append(s.Clients, client)
-				logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(s.Address)), "clients": len(s.Clients)}).Debug("Added new client")
-			}
+			logger.Error(err)
+			socket.Close()
 		}
-
 	}
 }
 
 func (s *ServerApi) CloseConnections() {
 	for _, client := range s.Clients {
-		client.Close()
+		client.close()
 	}
 }
 
@@ -213,7 +90,7 @@ func (s *ServerApi) ShutDown() {
 	s.listener.Close()
 }
 
-func NewServerApi(serial *SerialConnection, network *graph.Network, address MeshNodeId, config *ServerApiConfig) (*ServerApi, error) {
+func NewServerSocket(serialProxy *ConnectedPath2Serial, network *graph.Network, address MeshNodeId, config *ServerApiConfig) (*ServerApi, error) {
 	var bindAddress string = config.BindAddress
 	if config.BindAddress == "" || config.BindAddress == "dynamic" {
 		bindAddress = utils.FmtNodeIdHass(int64(address))
@@ -234,26 +111,8 @@ func NewServerApi(serial *SerialConnection, network *graph.Network, address Mesh
 
 	logger.WithFields(logger.Fields{"node": utils.FmtNodeId(int64(address)), "bind": server.listenAddress}).Debug("Start listening on port for node connection")
 	server.listener = listener
-	go server.ListenAndServe(serial, config.RemotePort)
+	go server.ListenAndServe(serialProxy, config.RemotePort)
 	return &server, nil
-}
-
-func (m *MultiServerApi) handleUnhandledReply(v *ConnectedPathApiReply) {
-	logger.WithFields(logger.Fields{"cmd": v.Command, "handle": v.Handle}).
-		Error("handleUnhandledReply: Connection not found for this handle")
-}
-
-func (m *MultiServerApi) HandleConnectedPathReply(v *ConnectedPathApiReply) {
-	var handled bool = false
-	for _, server := range m.Servers {
-		handled = server.HandleConnectedPathReply(v)
-		if handled {
-			break
-		}
-	}
-	if !handled {
-		m.handleUnhandledReply(v)
-	}
 }
 
 func (m *MultiServerApi) Stats() *EspApiStats {
@@ -286,7 +145,7 @@ func (m *MultiServerApi) MainNetworkChanged(network *graph.Network) {
 			}
 			if !found {
 				logger.WithFields(logger.Fields{"node": utils.FmtNodeId(int64(node.ID()))}).Debug("MainNetworkChanged adding esphome connection to new node")
-				server, err := NewServerApi(m.serial, network, MeshNodeId(node.ID()), &m.config)
+				server, err := NewServerSocket(m.serialProxy, network, MeshNodeId(node.ID()), &m.config)
 				if err != nil {
 					log.Error(err)
 				} else {
@@ -350,7 +209,7 @@ func (m *MultiServerApi) createApiAndOtaServers(nodeId MeshNodeId, network *grap
 	configApi := m.config
 	configApi.RemotePort = fixedApiRemotePort
 
-	server, err := NewServerApi(m.serial, network, nodeId, &configApi)
+	server, err := NewServerSocket(m.serialProxy, network, nodeId, &configApi)
 	if err != nil {
 		log.Error(err)
 	} else {
@@ -360,7 +219,7 @@ func (m *MultiServerApi) createApiAndOtaServers(nodeId MeshNodeId, network *grap
 	configOta := m.config
 	configOta.BindPort = fixedOtaRemotePort
 	configOta.RemotePort = fixedOtaRemotePort
-	serverOta, err := NewServerApi(m.serial, network, nodeId, &configOta)
+	serverOta, err := NewServerSocket(m.serialProxy, network, nodeId, &configOta)
 	if err != nil {
 		log.Error(err)
 	} else {
@@ -386,17 +245,16 @@ type ServerApiConfig struct {
 
 type MultiServerApi struct {
 	espApiStats *EspApiStats
-	serial      *SerialConnection
+	serialProxy *ConnectedPath2Serial
 	starPath    *StarPath
 	config      ServerApiConfig
 	Servers     []*ServerApi
 }
 
-func NewMultiServerApi(serial *SerialConnection, config ServerApiConfig) *MultiServerApi {
+func NewMultiSocketServer(serialProxy *ConnectedPath2Serial, config ServerApiConfig) *MultiServerApi {
 	_allStats = NewEspApiStats()
-	multisrv := MultiServerApi{serial: serial, espApiStats: _allStats, config: config}
-	SendClearConnections(serial)
-	multisrv.serial.ConnPathFn = multisrv.HandleConnectedPathReply
+	multisrv := MultiServerApi{serialProxy: serialProxy, espApiStats: _allStats, config: config}
+	serialProxy.ClearConnections()
 
 	network := graph.GetMainNetwork()
 	nodes := network.Nodes()

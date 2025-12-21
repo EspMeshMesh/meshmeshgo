@@ -29,12 +29,14 @@ const (
 )
 
 type ConnPathConnection struct {
-	//address   MeshNodeId
-	connState uint8
-	serial    *SerialConnection
-	handle    uint16
-	sequence  uint16
-	network   *graph.Network
+	serialProxy                 *ConnectedPath2Serial
+	serialDataAvailableCallback func(data []byte)
+	connectionActiveCallback    func()
+	connectionInvalidCallback   func()
+	connState                   uint8
+	handle                      uint16
+	sequence                    uint16
+	network                     *graph.Network
 }
 
 func ParseAddress(address string) (MeshNodeId, error) {
@@ -70,45 +72,12 @@ func (client *ConnPathConnection) getNextSequence() uint16 {
 }
 
 func (client *ConnPathConnection) SendData(data []byte) error {
-	err := client.serial.SendApi(ConnectedPathApiRequest{
-		Protocol: meshmeshProtocolConnectedPath,
-		Command:  connectedPathSendDataRequest,
-		Handle:   client.handle,
-		Dummy:    0,
-		Sequence: client.getNextSequence(),
-		DataSize: uint16(len(data)),
-		Data:     data,
-	})
-
+	err := client.serialProxy.sendFrame(connectedPathSendDataRequest, client.handle, client.getNextSequence(), data)
 	return err
 }
 
-func SendSendDataNack(serial *SerialConnection, handle uint16) error {
-	err := serial.SendApi(ConnectedPathApiRequest{
-		Protocol: meshmeshProtocolConnectedPath,
-		Command:  connectedPathSendDataNackReply,
-		Handle:   handle,
-		Dummy:    0,
-		Sequence: 0,
-		DataSize: 0,
-		Data:     []byte{},
-	})
-
-	return err
-}
-
-func SendClearConnections(serial *SerialConnection) error {
-	err := serial.SendApi(ConnectedPathApiRequest{
-		Protocol: meshmeshProtocolConnectedPath,
-		Command:  connectedPathClearConnections,
-		Handle:   0,
-		Dummy:    0,
-		Sequence: 0,
-		DataSize: 0,
-		Data:     []byte{},
-	})
-
-	return err
+func (client *ConnPathConnection) SendDataNack() error {
+	return client.serialProxy.sendFrame(connectedPathSendDataNackReply, client.handle, client.getNextSequence(), []byte{})
 }
 
 func (client *ConnPathConnection) OpenConnectionAsync2(textaddr string, port uint16) error {
@@ -144,20 +113,7 @@ func (client *ConnPathConnection) OpenConnectionAsync(addr MeshNodeId, port uint
 	}
 
 	client.connState = connPathConnectionStateHandshakeStarted
-	err = client.serial.SendApi(
-		ConnectedPathApiRequest2{
-			Protocol: meshmeshProtocolConnectedPath,
-			Command:  connectedPathOpenConnectionRequest,
-			Handle:   client.handle,
-			Dummy:    0,
-			Sequence: client.getNextSequence(),
-			DataSize: uint16(len(path)*4 + 3),
-			Port:     port,
-			PathLen:  uint8(len(path)),
-			Path:     path,
-		},
-	)
-
+	err = client.serialProxy.sendOpenConnectionRequest(client.handle, client.getNextSequence(), port, path)
 	return err
 }
 
@@ -169,61 +125,88 @@ func (client *ConnPathConnection) Disconnect() {
 	}
 
 	logger.WithFields(logger.Fields{"handle": client.handle, "connState": client.connState}).Debug("Sending Disconnect request")
-	client.serial.SendApi(ConnectedPathApiRequest{
-		Protocol: meshmeshProtocolConnectedPath,
-		Command:  connectedPathDisconnectRequest,
-		Handle:   client.handle,
-		Dummy:    0,
-		Sequence: client.getNextSequence(),
-		DataSize: 0,
-		Data:     []byte{},
-	})
-	client.connState = connPathConnectionStateInvalid
+	client.serialProxy.sendFrame(connectedPathDisconnectRequest, client.handle, client.getNextSequence(), []byte{})
+	client.invalidateConnection()
+}
+
+func (client *ConnPathConnection) handleIncomingSendDataRequest(v *ConnectedPathApiReply) {
+	if len(v.Data) > 0 {
+		client.serialDataAvailableCallback(v.Data)
+	}
 }
 
 func (client *ConnPathConnection) handleIncomingOpenConnAck(_ *ConnectedPathApiReply) {
 	if client.connState != connPathConnectionStateHandshakeStarted {
-		client.connState = connPathConnectionStateInvalid
 		logger.Error("handleIncomingOpenConnAck received while not in handshake state")
+		client.invalidateConnection()
 	} else {
 		logger.WithField("handle", client.handle).Debug("Accpeted connection")
 		client.connState = connPathConnectionStateActive
-
+		if client.connectionActiveCallback != nil {
+			client.connectionActiveCallback()
+		}
 	}
 }
 
 func (client *ConnPathConnection) handleIncomingOpenConnNack(v *ConnectedPathApiReply) {
 	logger.WithFields(logger.Fields{"handle": v.Handle}).Error("nack during opening connection")
-	client.connState = connPathConnectionStateInvalid
+	client.invalidateConnection()
 }
 
-func (client *ConnPathConnection) HandleIncomingReply(v *ConnectedPathApiReply) {
-	logger.WithFields(logger.Fields{"handle": v.Handle, "reply": v.Command}).Debug("HandleIncomingReply")
+func (client *ConnPathConnection) handleIncomingSerialPacket(v *ConnectedPathApiReply) {
 	switch v.Command {
+	case connectedPathSendDataRequest:
+		client.handleIncomingSendDataRequest(v)
 	case connectedPathOpenConnectionAck:
 		client.handleIncomingOpenConnAck(v)
 	case connectedPathOpenConnectionNack:
 		client.handleIncomingOpenConnNack(v)
 	case connectedPathSendDataNackReply:
 		logger.WithField("handle", v.Handle).Error("HandleIncomingReply: SendDataNack")
-		client.connState = connPathConnectionStateInvalid
+		client.invalidateConnection()
 	case connectedPathDisconnectRequest:
 		logger.WithField("handle", v.Handle).Debug("HandleIncomingReply: DisconnectRequest")
-		client.connState = connPathConnectionStateInvalid
+		client.invalidateConnection()
 	default:
 		logger.WithFields(logger.Fields{"handle": v.Handle, "reply": v.Command}).
 			Error("HandleIncomingReply: unknow command reply received", v.Command, v.Handle)
 	}
 }
 
-func NewConnPathConnection(serial *SerialConnection, network *graph.Network) *ConnPathConnection {
+func (client *ConnPathConnection) invalidateConnection() {
+	if client.connState != connPathConnectionStateInvalid {
+		client.connState = connPathConnectionStateInvalid
+		if client.connectionInvalidCallback != nil {
+			client.connectionInvalidCallback()
+		}
+	}
+}
+
+func (client *ConnPathConnection) SetSerialDataAvailableCallback(callback func(data []byte)) {
+	client.serialDataAvailableCallback = callback
+}
+
+func (client *ConnPathConnection) SetConnectionActiveCallback(callback func()) {
+	client.connectionActiveCallback = callback
+}
+
+func (client *ConnPathConnection) SetConnectionInvalidCallback(callback func()) {
+	client.connectionInvalidCallback = callback
+}
+
+func (client *ConnPathConnection) Dispose() {
+	client.serialProxy.RemovePacketReceivedCallback(client.handle)
+}
+
+func NewConnPathConnection(serialProxy *ConnectedPath2Serial, network *graph.Network) *ConnPathConnection {
 
 	conn := &ConnPathConnection{
-		serial:    serial,
-		network:   network,
-		handle:    serial.GetNextHandle(),
-		connState: connPathConnectionStateInit,
+		serialProxy: serialProxy,
+		network:     network,
+		handle:      serialProxy.GetNextSerialHandle(),
+		connState:   connPathConnectionStateInit,
 	}
-	return conn
 
+	serialProxy.AddPacketReceivedCallback(conn.handle, conn.handleIncomingSerialPacket)
+	return conn
 }

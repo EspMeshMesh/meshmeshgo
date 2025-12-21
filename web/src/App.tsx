@@ -19,9 +19,10 @@ import { MeshAutoNodesList } from "./network/MeshAutoNodesList";
 import { MeshAutoLinksList } from "./network/MeshAutoLinksList";
 import { MeshAutoNodeEdit } from "./network/MeshAutoNodeEdit";
 import { ShowGraph } from './showgraph/ShowGraph';
+import { Dashboard } from "./dashboard/dashboard";
 
 export const App = () => (
-    <Admin layout={Layout} dataProvider={dataProvider} title="Mesh Network">
+    <Admin dashboard={Dashboard} layout={Layout} dataProvider={dataProvider} title="Mesh Network">
         <Resource name="autoNodes" list={MeshAutoNodesList} edit={MeshAutoNodeEdit} icon={HubIcon} options={{ label: "Dynamic nodes" }}/>
         <Resource name="autoLinks" list={MeshAutoLinksList} icon={LinkIcon} options={{ label: "Dynamic links" }}/>
         <Resource name="nodes" list={MeshNodesList} edit={MeshNodeEdit} create={MeshNodeCreate} icon={HubIcon} options={{ label: "Static nodes" }} />
