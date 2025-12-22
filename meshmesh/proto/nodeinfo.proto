@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package espmeshmesh;
+option go_package = "./meshmesh/pb";
+
+message NodeInfo {
+  string friendly_name = 1;
+  string firmware_version = 2;
+  string mac_address = 3;
+  string platform = 4;
+  string board = 5;
+  string compile_time = 6;
+  string lib_version = 7;
+}
