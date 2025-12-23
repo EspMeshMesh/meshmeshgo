@@ -15,7 +15,6 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.6
 	github.com/urfave/cli/v2 v2.27.5
-	github.com/vincent-petithory/dataurl v1.0.0
 	go.bug.st/serial v1.6.2
 	golang.org/x/exp v0.0.0-20250103183323-7d7fa50e5329
 	gonum.org/v1/gonum v0.15.1

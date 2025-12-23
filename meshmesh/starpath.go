@@ -1,8 +1,10 @@
 package meshmesh
 
 import (
+	"fmt"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"leguru.net/m/v2/graph"
@@ -38,6 +40,23 @@ func (s *StarPath) refreshInputEdges(fromId int64, toId int64, weight float64) {
 	s.network.ChangeEdgeWeight(fromId, toId, weight, weight)
 }
 
+func (s *StarPath) buildPathString(source int32, target int32, path []uint32, costs []int32) string {
+	builder := strings.Builder{}
+	builder.WriteString(utils.FmtNodeId(int64(source)))
+	for i := range len(path) {
+		builder.WriteString(" ->(")
+		builder.WriteString(fmt.Sprintf("%d", costs[i]))
+		builder.WriteString(")->")
+		builder.WriteString(" -> ")
+		builder.WriteString(utils.FmtNodeId(int64(path[i])))
+	}
+	builder.WriteString(" ->(")
+	builder.WriteString(fmt.Sprintf("%d", costs[len(costs)-1]))
+	builder.WriteString(")-> ")
+	builder.WriteString(utils.FmtNodeId(int64(target)))
+	return builder.String()
+}
+
 func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, serial *SerialConnection) {
 	if v.NodePresentation == nil {
 		logger.Log().Error("NodePresentation is nil")
@@ -58,11 +77,10 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 		return
 	}
 
-	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress))}).Info("NodePresentstionReply received")
-	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime, "lib_version": v.NodePresentation.LibVersion}).Info("ProtoPresentationReply received")
-	for i := range len(v.PathRouting.Repeaters) {
-		logger.WithFields(logger.Fields{"repeater": utils.FmtNodeId(int64(v.PathRouting.Repeaters[i])), "rssi": v.PathRouting.Rssi[i]}).Debug("NodePresentstionReply received")
-	}
+	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress))}).Info("NodePresentstionReply")
+	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime, "lib_version": v.NodePresentation.LibVersion}).Info("NodePresentstionReply")
+	logger.WithFields(logger.Fields{"repeaters": len(v.PathRouting.Repeaters), "rssi": len(v.PathRouting.Repeaters)}).Info("NodePresentationReply")
+	logger.WithFields(logger.Fields{"path": s.buildPathString(int32(v.PathRouting.SourceAddress), int32(v.PathRouting.TargetAddress), v.PathRouting.Repeaters, v.PathRouting.Rssi)}).Info("PathRouting received")
 
 	if uint32(v.PathRouting.TargetAddress) == serial.LocalNode {
 		sourceNodeIsNew := false

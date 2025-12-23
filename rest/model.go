@@ -41,12 +41,11 @@ type CreateNodeRequest struct {
 }
 
 type UpdateNodeRequest struct {
-	Tag      string `json:"tag"`
-	InUse    bool   `json:"in_use"`
-	Firmware string `json:"firmware"`
-	DevTag   string `json:"dev_tag"`
-	Channel  int8   `json:"channel"`
-	TxPower  int8   `json:"tx_power"`
+	Tag     string `json:"tag"`
+	InUse   bool   `json:"in_use"`
+	DevTag  string `json:"dev_tag"`
+	Channel int8   `json:"channel"`
+	TxPower int8   `json:"tx_power"`
 }
 
 type MeshNodeFirmware struct {
@@ -64,8 +63,8 @@ type MeshNode struct {
 	LastSeen    string `json:"last_seen"`
 	LibVersion  string `json:"libvers"`
 	Path        string `json:"path"`
-	Revision    string `json:"revision"`
 	Error       string `json:"error"`
+	DevRevision string `json:"dev_firmrev"`
 	DevTag      string `json:"dev_tag"`
 	Channel     int8   `json:"channel"`
 	TxPower     int8   `json:"tx_power"`

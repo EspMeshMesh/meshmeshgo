@@ -7,66 +7,11 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/vincent-petithory/dataurl"
 
 	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/meshmesh"
-	"leguru.net/m/v2/utils"
 )
-
-func (h *Handler) nodeInfoGetCmd(m *MeshNode) error {
-	network := graph.GetMainNetwork()
-	protocol := meshmesh.FindBestProtocol(meshmesh.MeshNodeId(m.ID), network)
-	rep, err := h.serialConn.SendReceiveApiProt(meshmesh.FirmRevApiRequest{}, protocol, meshmesh.MeshNodeId(m.ID), network)
-	if err != nil {
-		return err
-	}
-	rev := rep.(meshmesh.FirmRevApiReply)
-
-	rep, err = h.serialConn.SendReceiveApiProt(meshmesh.NodeConfigApiRequest{}, protocol, meshmesh.MeshNodeId(m.ID), network)
-	if err != nil {
-		return err
-	}
-	cfg := rep.(meshmesh.NodeConfigApiReply)
-
-	m.Revision = utils.TruncateZeros(rev.Revision)
-	m.DevTag = utils.TruncateZeros(cfg.Tag)
-	m.Channel = int8(cfg.Channel)
-	m.TxPower = int8(cfg.TxPower)
-	m.Groups = int(cfg.Groups)
-	m.Binded = int(cfg.BindedServer)
-	m.Flags = int(cfg.Flags)
-
-	return nil
-}
-
-func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *graph.Network) MeshNode {
-	jsonNode := MeshNode{
-		ID:          uint(dev.ID()),
-		Tag:         string(dev.Device().Tag()),
-		InUse:       dev.Device().InUse(),
-		IsLocal:     dev.ID() == network.LocalDeviceId(),
-		FirmRev:     dev.Device().Firmware(),
-		LibVersion:  dev.Device().LibVersion(),
-		CompileTime: formatTimeForJson(dev.Device().CompileTime()),
-		LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
-		Path:        graph.FmtNodePath(network, dev),
-	}
-
-	if h.firmwareUploadProcedure == nil || h.firmwareUploadProcedure.IsComplete() {
-		if withInfo {
-			err := h.nodeInfoGetCmd(&jsonNode)
-			if err != nil {
-				jsonNode.Error = err.Error()
-			} else {
-				dev.Device().SetFirmware(jsonNode.Revision)
-			}
-		}
-	}
-
-	return jsonNode
-}
 
 // @Id getNodes
 // @Summary Get nodes
@@ -217,23 +162,6 @@ func (h *Handler) updateNode(c *gin.Context) {
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.InUse)
 	network.NotifyNetworkChanged()
-
-	if req.Firmware != "" {
-		firmware, err := dataurl.DecodeString(req.Firmware)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid firmware: " + err.Error()})
-			return
-		}
-
-		if len(firmware.Data) > 0 {
-			logger.Log().WithField("firmware", firmware.MediaType).Info("Firmware")
-			err = h.uploadFirmware(int64(dev.ID()), firmware.Data)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "Failed to upload firmware: " + err.Error()})
-				return
-			}
-		}
-	}
 
 	jsonNode := h.fillNodeStruct(dev, true, network)
 	errors := []error{}

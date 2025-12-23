@@ -69,7 +69,7 @@ export const MeshAutoNodeEdit = () => {
                             </>
                         )}
                     </FormDataConsumer>
-                    <TextInput source="revision" readOnly />
+                    <TextInput source="dev_firmrev" readOnly />
                     <TextInput source="binded" format={v => "0x" + v.toString(16).toUpperCase()} readOnly />
                     <TextInput source="flags" readOnly />
                 </TabbedForm.Tab>

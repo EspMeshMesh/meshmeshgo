@@ -142,6 +142,12 @@ type NodeConfigApiReply struct {
 	Flags        uint8  `struct:"uint8"`
 }
 
+const protoNodeInfoApiRequest uint8 = 16
+
+type ProtoNodeInfoApiRequest struct {
+	Id uint8 `struct:"uint8"`
+}
+
 const protoNodeInfoApiReply uint8 = 17
 
 const nodeRebootApiRequest uint8 = 24
@@ -601,7 +607,7 @@ func (frame *ApiFrame) Decode() (any, error) {
 		return v, nil
 	case protoNodeInfoApiReply:
 		v := pb.NodeInfo{}
-		err := proto.Unmarshal(frame.data, &v)
+		err := proto.Unmarshal(frame.data[1:], &v)
 		if err != nil {
 			return nil, err
 		}
@@ -730,6 +736,9 @@ func EncodeBuffer(cmd interface{}) ([]byte, error) {
 		b, err = restruct.Pack(binary.LittleEndian, &v)
 	case NodeConfigApiRequest:
 		v.Id = nodeConfigApiRequest
+		b, err = restruct.Pack(binary.LittleEndian, &v)
+	case ProtoNodeInfoApiRequest:
+		v.Id = protoNodeInfoApiRequest
 		b, err = restruct.Pack(binary.LittleEndian, &v)
 	case NodeRebootApiRequest:
 		v.Id = nodeRebootApiRequest
