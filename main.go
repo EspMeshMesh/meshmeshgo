@@ -96,7 +96,6 @@ func mainNetworkChangedCallback(network *gra.Network) {
 }
 
 func starPathNetworkChangedCallback(network *gra.Network) {
-	setupMdns(network)
 	network.SaveToFile(starPathGraphFilename)
 }
 
@@ -209,15 +208,10 @@ func main() {
 	starPath := meshmesh.NewStarPath(serialPort, starPathGraphFilename)
 	starPath.GetNetwork().AddNetworkChangedCallback(starPathNetworkChangedCallback)
 
-	// Zeroconf and mdns setup
-	setMdnsConfig(MdnsServiceConfig{
-		zeroconfEnabled: config.EnableZeroconf,
-		dynmicAddress:   config.BindAddress == "dynamic" || config.BindAddress == "",
-		apiPort:         config.BindPort,
-		apiBasePort:     config.BasePortOffset,
-		apiPortsSpan:    config.SizeOfPortsPool,
-	})
-	setupMdns(starPath.GetNetwork())
+	// Zeroconf responder setup
+	zeroconf := NewZeroconfResponder()
+	zeroconf.Start(starPath.GetNetwork())
+
 	// Init node for spcific debug
 	initDebugNode(config)
 	gra.PrintTable(gra.GetMainNetwork())
@@ -263,4 +257,6 @@ func main() {
 			//}
 		}
 	}
+
+	zeroconf.Stop()
 }
