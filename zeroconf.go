@@ -38,22 +38,20 @@ func (z *ZeroconfResponder) addService(name string, nodeid int32, port int, firm
 		return err
 	}
 
-	h, err := z.rp.Add(srv)
+	srv.Text = map[string]string{
+		"friendly_name":   name,
+		"mac":             "FE7F00" + fmt.Sprintf("%06X", nodeid&0xFFFFFF),
+		"board":           "esp32dev",
+		"project_name":    name,
+		"project_version": "1.0.1",
+		"network":         "meshmesh",
+		"version":         firmware,
+	}
+
+	h, err := z.rp.Add(srv, true)
 	if err != nil {
 		return err
 	}
-
-	h.UpdateText(
-		map[string]string{
-			"friendly_name":   name,
-			"mac":             "FE7F00" + fmt.Sprintf("%06X", nodeid&0xFFFFFF),
-			"board":           "esp32dev",
-			"project_name":    name,
-			"project_version": "1.0.1",
-			"network":         "meshmesh",
-			"version":         firmware,
-		}, z.rp,
-	)
 
 	z.services[name] = h
 	return nil
@@ -69,23 +67,22 @@ func (z *ZeroconfResponder) removeService(name string) error {
 	return nil
 }
 
-func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network) error {
+func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network) {
 	nodes := network.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
-		wantService := node.Device().InUse() && !network.IsLocalDevice(node)
+		wantService := node.Device().InUse() && !network.IsLocalDevice(node) && !node.Device().DeepSleep()
 		hasService := z.services[node.DeviceTagOrFormattedId()] != nil
 
 		if wantService && !hasService {
-			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("Adding Zeroconf service")
 			port := utils.ComputeNodePort(node.ID(), 6053, 20000, 10000)
 			z.addService(node.DeviceTagOrFormattedId(), int32(node.ID()), port, node.Device().Firmware())
+			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId(), "port": port}).Info("ZeroconfResponder.Adding Zeroconf service")
 		} else if !wantService && hasService {
-			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("Removing Zeroconf service")
+			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("ZeroconfResponder.networkChangedCallback: Removing Zeroconf service")
 			z.removeService(node.DeviceTagOrFormattedId())
 		}
 	}
-	return nil
 }
 
 func (z *ZeroconfResponder) Start(network *graph.Network) error {
@@ -94,19 +91,8 @@ func (z *ZeroconfResponder) Start(network *graph.Network) error {
 		return err
 	}
 
-	nodes := network.Nodes()
-	for nodes.Next() {
-		node := nodes.Node().(graph.NodeDevice)
-		if node.Device().InUse() && !network.IsLocalDevice(node) {
-			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("Adding Zeroconf service")
-			port := utils.ComputeNodePort(node.ID(), 6053, 20000, 10000)
-			z.addService(node.DeviceTagOrFormattedId(), int32(node.ID()), port, node.Device().Firmware())
-		}
-	}
-
-	network.AddNetworkChangedCallback(func(network *graph.Network) {
-		z.networkChangedCallback(network)
-	})
+	network.AddNetworkChangedCallback(z.networkChangedCallback)
+	z.networkChangedCallback(network)
 
 	z.ctx, z.cancel = context.WithCancel(context.Background())
 	go z.rp.Respond(z.ctx)

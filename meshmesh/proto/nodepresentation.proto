@@ -3,10 +3,17 @@ syntax = "proto3";
 package espmeshmesh;
 option go_package = "./meshmesh/pb";
 
+enum NodePresentationFlags {
+  NODE_PRESENTATION_TYPE_HELLO = 0;
+  NODE_PRESENTATION_TYPE_GOODBYE = 1;
+  NODE_PRESENTATION_TYPE_REFRESH = 2;
+}
+
 message NodePresentation {
   string hostname = 1;
   string firmware_version = 2;
   string compile_time = 3;
   string lib_version = 4;
+  NodePresentationFlags type = 5;
 }
 

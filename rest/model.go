@@ -57,6 +57,7 @@ type MeshNode struct {
 	ID          uint   `json:"id"`
 	Tag         string `json:"tag"`
 	InUse       bool   `json:"in_use"`
+	DeepSleep   bool   `json:"deep_sleep"`
 	IsLocal     bool   `json:"is_local"`
 	FirmRev     string `json:"firmrev"`
 	CompileTime string `json:"comptime"`

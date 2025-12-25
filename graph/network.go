@@ -27,6 +27,7 @@ const (
 
 type Device struct {
 	inuse       bool
+	deepSleep   bool
 	discovered  bool
 	tag         string
 	firmware    string
@@ -41,6 +42,14 @@ func (d *Device) InUse() bool {
 
 func (d *Device) SetInUse(inuse bool) {
 	d.inuse = inuse
+}
+
+func (d *Device) DeepSleep() bool {
+	return d.deepSleep
+}
+
+func (d *Device) SetDeepSleep(deepSleep bool) {
+	d.deepSleep = deepSleep
 }
 
 func (d *Device) Discovered() bool {

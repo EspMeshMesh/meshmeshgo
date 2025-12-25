@@ -57,7 +57,12 @@ func (s *StarPath) buildPathString(source int32, target int32, path []uint32, co
 	return builder.String()
 }
 
-func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, serial *SerialConnection) {
+func (s *StarPath) handleProtoPresentationRxReply(data any) {
+	v, ok := data.(*pb.NodePresentationRx)
+	if !ok {
+		logger.Log().Error("Can't decode incoming proto presentation packet")
+		return
+	}
 	if v.NodePresentation == nil {
 		logger.Log().Error("NodePresentation is nil")
 		return
@@ -72,17 +77,17 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 		return
 	}
 
-	if v.PathRouting.TargetAddress != uint32(serial.LocalNode) {
+	if v.PathRouting.TargetAddress != uint32(s.serial.LocalNode) {
 		logger.Log().Error("PathRouting target address is not the local node")
 		return
 	}
 
-	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress))}).Info("NodePresentstionReply")
+	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress)), "type": v.NodePresentation.Type}).Info("NodePresentstionReply")
 	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime, "lib_version": v.NodePresentation.LibVersion}).Info("NodePresentstionReply")
 	logger.WithFields(logger.Fields{"repeaters": len(v.PathRouting.Repeaters), "rssi": len(v.PathRouting.Repeaters)}).Info("NodePresentationReply")
 	logger.WithFields(logger.Fields{"path": s.buildPathString(int32(v.PathRouting.SourceAddress), int32(v.PathRouting.TargetAddress), v.PathRouting.Repeaters, v.PathRouting.Rssi)}).Info("PathRouting received")
 
-	if uint32(v.PathRouting.TargetAddress) == serial.LocalNode {
+	if uint32(v.PathRouting.TargetAddress) == s.serial.LocalNode {
 		sourceNodeIsNew := false
 
 		sourceNode, err := s.network.GetNodeDevice(int64(v.PathRouting.SourceAddress))
@@ -90,10 +95,12 @@ func (s *StarPath) handleProtoPresentationRxReply(v *pb.NodePresentationRx, seri
 			sourceNode = graph.NewNodeDevice(int64(v.PathRouting.SourceAddress), true, "")
 			sourceNodeIsNew = true
 		}
+
 		sourceNode.Device().SetTag(v.NodePresentation.Hostname)
 		sourceNode.Device().SetFirmware(v.NodePresentation.FirmwareVersion)
 		sourceNode.Device().SetCompileTimeString(v.NodePresentation.CompileTime)
 		sourceNode.Device().SetLibVersion(v.NodePresentation.LibVersion)
+		sourceNode.Device().SetDeepSleep(v.NodePresentation.Type == pb.NodePresentationFlags_NODE_PRESENTATION_TYPE_GOODBYE)
 		sourceNode.Device().SetLastSeen(time.Now())
 
 		if sourceNodeIsNew {
@@ -136,6 +143,6 @@ func NewStarPath(serial *SerialConnection, cacheFile string) *StarPath {
 		serial:  serial,
 		network: initNetwork(int64(serial.LocalNode), cacheFile),
 	}
-	starPath.serial.ProtoPresentationFn = starPath.handleProtoPresentationRxReply
+	starPath.serial.AddFrameReceivedCallback(protoPresentationRxApiReply, 0, starPath.handleProtoPresentationRxReply)
 	return starPath
 }

@@ -6,7 +6,7 @@ import { useGetList } from "react-admin";
 type GraphDataNode = {
     id: number;
     label: string;
-    is_local: boolean;
+    color: string;
 };
 
 type GraphDataLink = {
@@ -23,7 +23,9 @@ type GraphData = {
 type NetworkNode = {
     id: number;
     tag: string;
+    in_use: boolean;
     is_local: boolean;
+    deep_sleep: boolean;
 };
 
 type NetworkLink = {
@@ -58,18 +60,25 @@ export const NetworkGraph = ({networkType}: NetworkGraphProps) => {
     useEffect(() => {
         if (networkLinks && networkNodes) {
             setData({ 
-                nodes: networkNodes.map((node: any) => ({ id: node.id, label: node.tag, is_local: node.is_local })), 
+                nodes: networkNodes.map((node: any) => ({ id: node.id, label: node.tag, is_local: node.is_local, color: nodeColor(node) })), 
                 links: networkLinks.map((link: any) => ({ source: link.from, target: link.to, value: link.weight })) 
             });
         }
     }, [networkLinks]);
+
+    const nodeColor = (node: NetworkNode) => {
+        if(node.is_local) return 'yellow';
+        if (!node.in_use) return 'gray';
+        if (node.deep_sleep) return 'blue';
+        return '#99ff99';
+    }
 
     return (
         <ForceGraph2D 
             ref={fgRef}
             graphData={data}
             nodeLabel={node => node.label}
-            nodeColor={node => node.is_local ? 'yellow' : 'blue'}
+            nodeColor={node => node.color}
             linkLabel={link => (link.value * 100).toString()+'%'}
             width={window.innerWidth-300}
             height={650}

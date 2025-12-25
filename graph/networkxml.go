@@ -14,6 +14,14 @@ import (
 	"leguru.net/m/v2/utils"
 )
 
+func parseBool(attrs map[string]any, key string) bool {
+	b, ok := attrs[key].(bool)
+	if !ok {
+		return false
+	}
+	return b
+}
+
 func parseString(attrs map[string]any, key string) string {
 	s, ok := attrs[key].(string)
 	if !ok {
@@ -88,6 +96,7 @@ func (g *Network) readGraph(filename string) error {
 				dev.Device().SetCompileTime(parseTime(attrs, "comptime"))
 				dev.Device().SetLastSeen(parseTime(attrs, "lastseen"))
 				dev.Device().SetLibVersion(parseString(attrs, "libvers"))
+				dev.Device().SetDeepSleep(parseBool(attrs, "deepsleep"))
 				g.AddNode(dev)
 			}
 
@@ -131,6 +140,7 @@ func (g *Network) writeGraph(filename string) error {
 	gml := graphml.NewGraphML("meshmesh network")
 
 	gml.RegisterKey(graphml.KeyForNode, "inuse", "is node in use", reflect.Bool, true)
+	gml.RegisterKey(graphml.KeyForNode, "deepsleep", "is node in deep sleep", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "discover", "state variable for discovery", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
@@ -151,6 +161,7 @@ func (g *Network) writeGraph(filename string) error {
 
 		attributes := map[string]any{
 			"inuse":      node.Device().InUse(),
+			"deepsleep":  node.Device().DeepSleep(),
 			"discovered": node.Device().Discovered(),
 			"firmware":   node.Device().Firmware(),
 			"libvers":    node.Device().LibVersion(),

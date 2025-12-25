@@ -78,3 +78,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/brutella/dnssd => github.com/persuader72/dnssd v0.0.0-20251225221351-db9c93f0e4d5

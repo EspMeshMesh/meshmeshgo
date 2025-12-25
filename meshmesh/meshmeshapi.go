@@ -12,7 +12,6 @@ import (
 	"github.com/go-restruct/restruct"
 	"github.com/sirupsen/logrus"
 	"go.bug.st/serial"
-	"google.golang.org/protobuf/proto"
 	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	pb "leguru.net/m/v2/meshmesh/pb"
@@ -73,7 +72,6 @@ type SerialConnection struct {
 	NextHandle            uint16
 	LocalNode             uint32
 	DiscAssociateFn       func(*DiscAssociateApiReply, *SerialConnection)
-	NodePresentstionFn    func(*NodePresentationApiReply, *SerialConnection)
 	ProtoPresentationFn   func(*pb.NodePresentationRx, *SerialConnection)
 	FrameReceivedCallback []FrameReceivedCallback
 	localNodeIdChangedCb  func(meshNodeId MeshNodeId)
@@ -145,22 +143,6 @@ func (serialConn *SerialConnection) ReadFrame(buffer []byte) {
 				restruct.Unpack(frame.data, binary.LittleEndian, &vv)
 				if serialConn.DiscAssociateFn != nil {
 					serialConn.DiscAssociateFn(&vv, serialConn)
-				}
-			} else if frame.AssertType(nodePresentationApiReply, 0) {
-				vv := NodePresentationApiReply{}
-				restruct.Unpack(frame.data, binary.LittleEndian, &vv)
-				if serialConn.NodePresentstionFn != nil {
-					serialConn.NodePresentstionFn(&vv, serialConn)
-				}
-			} else if frame.AssertType(protoPresentationRxApiReply, 0) {
-				vv := pb.NodePresentationRx{}
-				err := proto.Unmarshal(buffer[1:], &vv)
-				if err != nil {
-					logger.Log().WithField("err", err).Error("Can't decode incoming proto presentation packet")
-					return
-				}
-				if serialConn.ProtoPresentationFn != nil {
-					serialConn.ProtoPresentationFn(&vv, serialConn)
 				}
 			} else {
 				for _, callback := range serialConn.FrameReceivedCallback {

@@ -96,7 +96,6 @@ func (c *ConnectionPathBridge) startHandshake(addr MeshNodeId, port int) error {
 }
 
 func (c *ConnectionPathBridge) finishHandshake(result bool) {
-	logger.WithField("res", result).Debug("finishHandshake")
 	if !result {
 		logger.WithFields(logger.Fields{"addr": c.reqAddress, "port": c.reqPort, "err": nil}).
 			Warning("ApiConnection.finishHandshake failed")
@@ -179,7 +178,7 @@ func (c *ConnectionPathBridge) checkTimeoutRoutine() {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	logger.Debug("ApiConnection.CheckTimeout exited")
+	logger.Debug("ConnectionPathBridge.checkTimeoutRoutine exited")
 }
 
 func NewConnectionPathBridge(socket net.Conn, serialProxy *ConnectedPath2Serial, network *graph.Network, addr MeshNodeId, port int, driver ConnectionPathBridgeDriver, closedCb func(*ConnectionPathBridge)) (*ConnectionPathBridge, error) {

@@ -253,21 +253,7 @@ type LogEventApiReply struct {
 	Line  string     `struct:"string"`
 }
 
-const nodePresentationApiReply uint8 = 65
-
 const protoPresentationRxApiReply uint8 = 69
-
-type NodePresentationApiReply struct {
-	Id          uint8          `struct:"uint8"`
-	SourceAddr  MeshNodeId     `struct:"uint32"`
-	TargetAddr  MeshNodeId     `struct:"uint32"`
-	Repeaters   [16]MeshNodeId `struct:"[16]uint32"`
-	Rssi        [16]int16      `struct:"[16]int16"`
-	Hops        uint8          `struct:"uint8"`
-	Hostname    [16]byte       `struct:"[16]byte"`
-	FwVersion   [16]byte       `struct:"[16]byte"`
-	CompileTime [24]byte       `struct:"[24]byte"`
-}
 
 const connectedUnicastRequest uint8 = 114
 
@@ -639,13 +625,9 @@ func (frame *ApiFrame) Decode() (any, error) {
 			v.Line = string(frame.data[7:])
 		}
 		return v, nil
-	case nodePresentationApiReply:
-		v := NodePresentationApiReply{}
-		restruct.Unpack(frame.data, binary.LittleEndian, &v)
-		return v, nil
 	case protoPresentationRxApiReply:
 		v := pb.NodePresentationRx{}
-		err := proto.Unmarshal(frame.data, &v)
+		err := proto.Unmarshal(frame.data[1:], &v)
 		if err != nil {
 			return nil, err
 		}

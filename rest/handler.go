@@ -11,7 +11,7 @@ import (
 type Handler struct {
 	serialConn         *mm.SerialConnection
 	discoveryProcedure *mm.DiscoveryProcedure
-	esphomeServers     *mm.MultiServerApi
+	esphomeServers     *mm.MultiSocketServer
 	starPath           *mm.StarPath
 }
 
@@ -37,7 +37,7 @@ func routeFrontend(c *gin.Context) {
 	c.Writer.Header().Set("Location", "/manager")
 }
 
-func NewHandler(serialConn *mm.SerialConnection, esphomeServers *mm.MultiServerApi, starPath *mm.StarPath) *Handler {
+func NewHandler(serialConn *mm.SerialConnection, esphomeServers *mm.MultiSocketServer, starPath *mm.StarPath) *Handler {
 	return &Handler{
 		serialConn:         serialConn,
 		discoveryProcedure: nil,

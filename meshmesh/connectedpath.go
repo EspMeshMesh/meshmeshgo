@@ -137,10 +137,10 @@ func (client *ConnPathConnection) handleIncomingSendDataRequest(v *ConnectedPath
 
 func (client *ConnPathConnection) handleIncomingOpenConnAck(_ *ConnectedPathApiReply) {
 	if client.connState != connPathConnectionStateHandshakeStarted {
-		logger.Error("handleIncomingOpenConnAck received while not in handshake state")
+		logger.Error("ConnPathConnection.handleIncomingOpenConnAck received while not in handshake state")
 		client.invalidateConnection()
 	} else {
-		logger.WithField("handle", client.handle).Debug("Accpeted connection")
+		logger.WithField("handle", client.handle).Debug("ConnPathConnection.handleIncomingOpenConnAck: Accpeted connection")
 		client.connState = connPathConnectionStateActive
 		if client.connectionActiveCallback != nil {
 			client.connectionActiveCallback()

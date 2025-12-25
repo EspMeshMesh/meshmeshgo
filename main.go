@@ -220,13 +220,13 @@ func main() {
 
 	connectedPath2Serial := meshmesh.NewConnectedPath2Serial(serialPort)
 	// Initialize Esphome to HomeAssistant Server
-	esphomeapi := meshmesh.NewMultiSocketServer(connectedPath2Serial, meshmesh.ServerApiConfig{
+	multiSocketServer := meshmesh.NewMultiSocketServer(connectedPath2Serial, meshmesh.ServerApiConfig{
 		BindAddress:     config.BindAddress,
 		BindPort:        config.BindPort,
 		BasePortOffset:  config.BasePortOffset,
 		SizeOfPortsPool: config.SizeOfPortsPool,
 	})
-	esphomeapi.StarPathProtocol(starPath)
+	multiSocketServer.StarPathProtocol(starPath)
 
 	// Start RPC Server
 	rpcServer := rpc.NewRpcServer(config.RpcBindAddress)
@@ -234,7 +234,7 @@ func main() {
 	defer rpcServer.Stop()
 
 	// Start rest server
-	restHandler := rest.NewHandler(serialPort, esphomeapi, starPath)
+	restHandler := rest.NewHandler(serialPort, multiSocketServer, starPath)
 	rest.StartRestServer(rest.NewRouter(restHandler), config.RestBindAddress)
 
 	var lastStatsTime time.Time
@@ -253,7 +253,7 @@ func main() {
 		if time.Since(lastStatsTime) > 1*time.Minute {
 			lastStatsTime = time.Now()
 			//if (len(as.Connections)> 0 ) {  //
-			esphomeapi.PrintStats()
+			multiSocketServer.PrintStats()
 			//}
 		}
 	}

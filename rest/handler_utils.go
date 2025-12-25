@@ -33,11 +33,37 @@ func revisionToInteger(revision string) int {
 	return major*1000000 + minor*1000 + patch
 }
 
+func (h *Handler) fillNodesArrays(network *graph.Network) []MeshNode {
+	nodes := network.Nodes()
+	nodesArray := make([]MeshNode, 0, nodes.Len())
+	for nodes.Next() {
+		dev := nodes.Node().(graph.NodeDevice)
+		// Create MeshNode struct
+		nodesArray = append(nodesArray, MeshNode{
+			ID:          uint(dev.ID()),
+			Tag:         string(dev.Device().Tag()),
+			InUse:       dev.Device().InUse(),
+			DeepSleep:   dev.Device().DeepSleep(),
+			Path:        graph.FmtNodePath(network, dev),
+			IsLocal:     dev.ID() == network.LocalDeviceId(),
+			FirmRev:     dev.Device().Firmware(),
+			LibVersion:  dev.Device().LibVersion(),
+			CompileTime: formatTimeForJson(dev.Device().CompileTime()),
+			LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
+
+			compileTime: dev.Device().CompileTime(),
+			lastSeen:    dev.Device().LastSeen(),
+		})
+	}
+	return nodesArray
+}
+
 func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *graph.Network) MeshNode {
 	jsonNode := MeshNode{
 		ID:          uint(dev.ID()),
 		Tag:         string(dev.Device().Tag()),
 		InUse:       dev.Device().InUse(),
+		DeepSleep:   dev.Device().DeepSleep(),
 		IsLocal:     dev.ID() == network.LocalDeviceId(),
 		FirmRev:     dev.Device().Firmware(),
 		LibVersion:  dev.Device().LibVersion(),
