@@ -54,24 +54,25 @@ type MeshNodeFirmware struct {
 }
 
 type MeshNode struct {
-	ID          uint   `json:"id"`
-	Tag         string `json:"tag"`
-	InUse       bool   `json:"in_use"`
-	DeepSleep   bool   `json:"deep_sleep"`
-	IsLocal     bool   `json:"is_local"`
-	FirmRev     string `json:"firmrev"`
-	CompileTime string `json:"comptime"`
-	LastSeen    string `json:"last_seen"`
-	LibVersion  string `json:"libvers"`
-	Path        string `json:"path"`
-	Error       string `json:"error"`
-	DevRevision string `json:"dev_firmrev"`
-	DevTag      string `json:"dev_tag"`
-	Channel     int8   `json:"channel"`
-	TxPower     int8   `json:"tx_power"`
-	Groups      int    `json:"groups"`
-	Binded      int    `json:"binded"`
-	Flags       int    `json:"flags"`
+	ID              uint   `json:"id"`
+	Tag             string `json:"tag"`
+	InUse           bool   `json:"in_use"`
+	DeepSleep       bool   `json:"deep_sleep"`
+	IsLocal         bool   `json:"is_local"`
+	FirmRev         string `json:"firmrev"`
+	CompileTime     string `json:"comptime"`
+	LastSeen        string `json:"last_seen"`
+	LibVersion      string `json:"libvers"`
+	Path            string `json:"path"`
+	Error           string `json:"error"`
+	DevName         string `json:"dev_name"`
+	DevFriendlyName string `json:"dev_friendly_name"`
+	DevRevision     string `json:"dev_firmrev"`
+	Channel         int8   `json:"channel"`
+	TxPower         int8   `json:"tx_power"`
+	Groups          int    `json:"groups"`
+	Binded          int    `json:"binded"`
+	Flags           int    `json:"flags"`
 
 	compileTime time.Time
 	lastSeen    time.Time

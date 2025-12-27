@@ -98,7 +98,7 @@ func (h *Handler) nodeInfoGetCmd(network *graph.Network, m *MeshNode) error {
 			return err
 		}
 		nodeInfo := rep.(*pb.NodeInfo)
-		//m.Tag = nodeInfo.FriendlyName
+		m.DevFriendlyName = nodeInfo.FriendlyName
 		m.CompileTime = nodeInfo.CompileTime
 		m.FirmRev = nodeInfo.FirmwareVersion
 		m.LibVersion = nodeInfo.LibVersion
@@ -111,7 +111,7 @@ func (h *Handler) nodeInfoGetCmd(network *graph.Network, m *MeshNode) error {
 	cfg := rep.(meshmesh.NodeConfigApiReply)
 
 	m.DevRevision = utils.TruncateZeros(rev.Revision)
-	m.DevTag = utils.TruncateZeros(cfg.Tag)
+	m.DevName = utils.TruncateZeros(cfg.Tag)
 	m.Channel = int8(cfg.Channel)
 	m.TxPower = int8(cfg.TxPower)
 	m.Groups = int(cfg.Groups)

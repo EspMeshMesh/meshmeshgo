@@ -166,16 +166,6 @@ func (h *Handler) updateNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, true, network)
 	errors := []error{}
 
-	if req.DevTag != jsonNode.DevTag {
-		protocol := meshmesh.FindBestProtocol(meshmesh.MeshNodeId(dev.ID()), network)
-		_, err := h.serialConn.SendReceiveApiProt(meshmesh.NodeSetTagApiRequest{Tag: req.DevTag}, protocol, meshmesh.MeshNodeId(dev.ID()), network)
-		if err != nil {
-			errors = append(errors, err)
-		} else {
-			jsonNode.DevTag = req.DevTag
-		}
-	}
-
 	if req.Channel != (int8)(jsonNode.Channel) {
 		protocol := meshmesh.FindBestProtocol(meshmesh.MeshNodeId(dev.ID()), network)
 		_, err := h.serialConn.SendReceiveApiProt(meshmesh.NodeSetChannelApiRequest{Channel: uint8(req.Channel)}, protocol, meshmesh.MeshNodeId(dev.ID()), network)

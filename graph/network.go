@@ -26,14 +26,16 @@ const (
 )
 
 type Device struct {
-	inuse       bool
-	deepSleep   bool
-	discovered  bool
-	tag         string
-	firmware    string
-	libVersion  string
-	compileTime time.Time
-	lastSeen    time.Time
+	inuse        bool
+	deepSleep    bool
+	discovered   bool
+	tag          string
+	name         string
+	friendlyName string
+	firmware     string
+	libVersion   string
+	compileTime  time.Time
+	lastSeen     time.Time
 }
 
 func (d *Device) InUse() bool {
@@ -66,6 +68,22 @@ func (d *Device) Tag() string {
 
 func (d *Device) SetTag(tag string) {
 	d.tag = tag
+}
+
+func (d *Device) Name() string {
+	return d.name
+}
+
+func (d *Device) SetName(name string) {
+	d.name = name
+}
+
+func (d *Device) FriendlyName() string {
+	return d.friendlyName
+}
+
+func (d *Device) SetFriendlyName(friendlyName string) {
+	d.friendlyName = friendlyName
 }
 
 func (d *Device) Firmware() string {

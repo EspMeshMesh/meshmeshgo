@@ -97,6 +97,8 @@ func (s *StarPath) handleProtoPresentationRxReply(data any) {
 		}
 
 		sourceNode.Device().SetTag(v.NodePresentation.Hostname)
+
+		sourceNode.Device().SetName(v.NodePresentation.Hostname)
 		sourceNode.Device().SetFirmware(v.NodePresentation.FirmwareVersion)
 		sourceNode.Device().SetCompileTimeString(v.NodePresentation.CompileTime)
 		sourceNode.Device().SetLibVersion(v.NodePresentation.LibVersion)

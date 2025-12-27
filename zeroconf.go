@@ -24,12 +24,12 @@ func (z *ZeroconfResponder) setupZeroconf() error {
 	return err
 }
 
-func (z *ZeroconfResponder) addService(name string, nodeid int32, port int, firmware string) error {
+func (z *ZeroconfResponder) addService(name string, friendlyName string, nodeid int32, port int, firmware string) error {
 	cfg := dnssd.Config{
 		Name: name,
 		Type: "_esphomelib._tcp",
 		Port: port,
-		Host: utils.ToFQDN(name, "meshmesh"),
+		Host: name,
 		IPs:  []net.IP{utils.ToIPv4(int64(nodeid))},
 	}
 
@@ -39,13 +39,16 @@ func (z *ZeroconfResponder) addService(name string, nodeid int32, port int, firm
 	}
 
 	srv.Text = map[string]string{
-		"friendly_name":   name,
 		"mac":             "FE7F00" + fmt.Sprintf("%06X", nodeid&0xFFFFFF),
 		"board":           "esp32dev",
 		"project_name":    name,
 		"project_version": "1.0.1",
 		"network":         "meshmesh",
 		"version":         firmware,
+	}
+
+	if friendlyName != "" {
+		srv.Text["friendly_name"] = friendlyName
 	}
 
 	h, err := z.rp.Add(srv, true)
@@ -71,12 +74,12 @@ func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network) {
 	nodes := network.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
-		wantService := node.Device().InUse() && !network.IsLocalDevice(node) && !node.Device().DeepSleep()
+		wantService := node.Device().InUse() && !network.IsLocalDevice(node) && !node.Device().DeepSleep() && node.Device().Name() != ""
 		hasService := z.services[node.DeviceTagOrFormattedId()] != nil
 
 		if wantService && !hasService {
 			port := utils.ComputeNodePort(node.ID(), 6053, 20000, 10000)
-			z.addService(node.DeviceTagOrFormattedId(), int32(node.ID()), port, node.Device().Firmware())
+			z.addService(node.Device().Name(), node.Device().FriendlyName(), int32(node.ID()), port, node.Device().Firmware())
 			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId(), "port": port}).Info("ZeroconfResponder.Adding Zeroconf service")
 		} else if !wantService && hasService {
 			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("ZeroconfResponder.networkChangedCallback: Removing Zeroconf service")

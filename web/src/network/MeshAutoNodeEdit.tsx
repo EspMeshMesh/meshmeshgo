@@ -11,7 +11,7 @@ const RebootButton  = () => {
     const notify = useNotify();
 
     const handleClick = () => {
-        fetch(`/api/v1/nodeCommands/${record?.id}/reboot`, {
+        fetch(window.location.pathname + 'api/v1/nodeCommands/' + record?.id + '/reboot', {
             method: 'GET',
         }).then((r: Response) => {
             if (r.ok) {
@@ -62,13 +62,14 @@ export const MeshAutoNodeEdit = () => {
                         {({ formData }) => (
                             formData.error.length == 0 &&
                             <>
-                                <TextInput source="dev_tag" label="Device tag" />
                                 <NumberInput source="channel" min={-1} max={11} step={1} label="WIFI channel" />
                                 <NumberInput source="tx_power" min={-1} max={20} step={1} label="TX power" />
                                 <NumberInput source="groups" min={0} max={255} step={1} label="Groups" />
                             </>
                         )}
                     </FormDataConsumer>
+                    <TextInput source="dev_name" label="Device name" disabled />
+                    <TextInput source="dev_friendly_name" label="Device description" disabled />
                     <TextInput source="dev_firmrev" readOnly />
                     <TextInput source="binded" format={v => "0x" + v.toString(16).toUpperCase()} readOnly />
                     <TextInput source="flags" readOnly />

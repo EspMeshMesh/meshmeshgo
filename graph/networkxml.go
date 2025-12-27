@@ -68,7 +68,7 @@ func (g *Network) readGraph(filename string) error {
 		if i == 0 {
 			logger.Log().WithFields(logrus.Fields{"description": gr.Description}).Info("found graph")
 			for _, n := range gr.Nodes {
-				descr := n.Description
+
 				attrs, err := n.GetAttributes()
 				if err != nil {
 					return err
@@ -79,24 +79,20 @@ func (g *Network) readGraph(filename string) error {
 					return err
 				}
 
-				if len(descr) == 0 {
-					descr, _ = attrs["tag"].(string)
-				}
-
-				inuse, ok := attrs["inuse"].(bool)
-				if !ok {
-					inuse, err = strconv.ParseBool(attrs["inuse"].(string))
-					if err != nil {
-						return err
-					}
-				}
-
-				dev := NewNodeDevice(id, inuse, descr)
+				dev := NewNodeDevice(id, parseBool(attrs, "inuse"), n.Description)
+				dev.Device().SetInUse(parseBool(attrs, "inuse"))
+				dev.Device().SetName(parseString(attrs, "name"))
+				dev.Device().SetFriendlyName(parseString(attrs, "friendlyname"))
 				dev.Device().SetFirmware(parseString(attrs, "firmware"))
 				dev.Device().SetCompileTime(parseTime(attrs, "comptime"))
 				dev.Device().SetLastSeen(parseTime(attrs, "lastseen"))
 				dev.Device().SetLibVersion(parseString(attrs, "libvers"))
 				dev.Device().SetDeepSleep(parseBool(attrs, "deepsleep"))
+
+				if dev.Device().Name() == "" {
+					dev.Device().SetName(n.Description)
+				}
+
 				g.AddNode(dev)
 			}
 
@@ -143,6 +139,8 @@ func (g *Network) writeGraph(filename string) error {
 	gml.RegisterKey(graphml.KeyForNode, "deepsleep", "is node in deep sleep", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "discover", "state variable for discovery", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
+	gml.RegisterKey(graphml.KeyForNode, "name", "the node name", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "friendlyname", "the node friendly name", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "libvers", "the mesh library version", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "comptime", "the firmware compile time", reflect.String, "")
@@ -160,13 +158,15 @@ func (g *Network) writeGraph(filename string) error {
 		node := nodes.Node().(NodeDevice)
 
 		attributes := map[string]any{
-			"inuse":      node.Device().InUse(),
-			"deepsleep":  node.Device().DeepSleep(),
-			"discovered": node.Device().Discovered(),
-			"firmware":   node.Device().Firmware(),
-			"libvers":    node.Device().LibVersion(),
-			"comptime":   formatTime(node.Device().CompileTime()),
-			"lastseen":   formatTime(node.Device().LastSeen()),
+			"inuse":        node.Device().InUse(),
+			"deepsleep":    node.Device().DeepSleep(),
+			"discovered":   node.Device().Discovered(),
+			"name":         node.Device().Name(),
+			"friendlyname": node.Device().FriendlyName(),
+			"firmware":     node.Device().Firmware(),
+			"libvers":      node.Device().LibVersion(),
+			"comptime":     formatTime(node.Device().CompileTime()),
+			"lastseen":     formatTime(node.Device().LastSeen()),
 		}
 
 		gr.AddNode(attributes, utils.FmtNodeId(node.ID()), node.Device().Tag())
@@ -185,7 +185,7 @@ func (g *Network) writeGraph(filename string) error {
 			"weight": math.Floor(edge.Weight()*100) / 100,
 		}
 
-		description := fmt.Sprintf("from %s:[%s] to %s:[%s]", from.Device().Tag(), utils.FmtNodeId(from.ID()), to.Device().Tag(), utils.FmtNodeId(to.ID()))
+		description := fmt.Sprintf("from %s:[%s] to %s:[%s]", from.Device().Name(), utils.FmtNodeId(from.ID()), to.Device().Name(), utils.FmtNodeId(to.ID()))
 		gr.AddEdge(n1, n2, attributes, graphml.EdgeDirectionDefault, description)
 	}
 
