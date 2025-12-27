@@ -28,7 +28,10 @@ func (client *OtaConnection) Socket2Serial(buffer *bytes.Buffer, connectedPath *
 				break
 			}
 			if connectedPath.serialProxy.IsEsp8266() {
-				sleepTime := connectedPath.serialProxy.TxOneByteMs() * (len(chunk) * 25)
+				sleepTime := connectedPath.serialProxy.TxOneByteMs() * (len(chunk) * 2)
+				if sleepTime < 150000 {
+					sleepTime = 150000
+				}
 				time.Sleep(time.Duration(sleepTime) * time.Microsecond)
 			}
 		}

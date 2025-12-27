@@ -77,11 +77,8 @@ func (m *MultiSocketServer) networkChanged(network *graph.Network) {
 		hasServer := m.serverAddressExists(MeshNodeId(node.ID()))
 
 		if wantServer && !hasServer {
-			logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(node.ID()))}).Debug("MultiSocketServer.networkChanged: adding new node server")
+			logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(node.ID())), "network": network.NetworkId()}).Debug("MultiSocketServer.networkChanged: adding new node server")
 			m.createApiAndOtaServers(MeshNodeId(node.ID()), network)
-		} else if !wantServer && hasServer {
-			logger.WithFields(logger.Fields{"nodeId": utils.FmtNodeId(int64(node.ID()))}).Debug("MultiSocketServer.networkChanged: deleting node server")
-			m.ShutdownServer(MeshNodeId(node.ID()))
 		}
 	}
 
