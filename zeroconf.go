@@ -71,21 +71,25 @@ func (z *ZeroconfResponder) removeService(name string) error {
 }
 
 func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network) {
+	logger.WithFields(logger.Fields{"network": network.NetworkId()}).Info("ZeroconfResponder.networkChangedCallback")
 	nodes := network.Nodes()
 	for nodes.Next() {
 		node := nodes.Node().(graph.NodeDevice)
 		wantService := node.Device().InUse() && !network.IsLocalDevice(node) && !node.Device().DeepSleep() && node.Device().Name() != ""
-		hasService := z.services[node.DeviceTagOrFormattedId()] != nil
+		hasService := z.services[node.Device().Name()] != nil
 
+		//logger.WithFields(logger.Fields{"node": node.Device().Name(), "wantService": wantService, "hasService": hasService}).Info("ZeroconfResponder.networkChangedCallback")
 		if wantService && !hasService {
 			port := utils.ComputeNodePort(node.ID(), 6053, 20000, 10000)
 			z.addService(node.Device().Name(), node.Device().FriendlyName(), int32(node.ID()), port, node.Device().Firmware())
-			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId(), "port": port}).Info("ZeroconfResponder.Adding Zeroconf service")
+			logger.WithFields(logger.Fields{"node": node.Device().Name(), "port": port}).Info("ZeroconfResponder.networkChangedCallback: Adding Zeroconf service")
 		} else if !wantService && hasService {
-			logger.WithFields(logger.Fields{"node": node.DeviceTagOrFormattedId()}).Info("ZeroconfResponder.networkChangedCallback: Removing Zeroconf service")
-			z.removeService(node.DeviceTagOrFormattedId())
+			logger.WithFields(logger.Fields{"node": node.Device().Name()}).Info("ZeroconfResponder.networkChangedCallback: Removing Zeroconf service")
+			z.removeService(node.Device().Name())
 		}
 	}
+
+	// TODO: Check if there are any services that are not in the network and remove them
 }
 
 func (z *ZeroconfResponder) Start(network *graph.Network) error {
