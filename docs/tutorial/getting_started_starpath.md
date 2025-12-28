@@ -20,13 +20,17 @@ Mark one device as **Coordinator** and one device as **Test Node #1**.
 Create an empty folder for this project, and create and activate an new virtual environment inside it.
 
 ```bash
+# Create an empty folder called meshmesh
 mkdir meshmesh
+# Enter inside the new folder
 cd meshmesh
+# Create a python virtual environment  
 python3 -m venv venv
+# Activate the newly created environment
 source venv/bin/activate
 ```
 
-### Coordinator:
+### Flash the  coordinator firmware:
 
 Create the following file called **coordinator.yaml** inside the project folder.
 

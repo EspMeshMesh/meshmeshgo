@@ -5,6 +5,14 @@ The main task of this software is to make a bridge between the MeshMesh network 
 - The firmware for ESPHome nodes can be found on this [repository](https://github.com/EspMeshMesh/esphome-meshmesh)
 - The PlatformIO library can bu found on this [repository](https://github.com/EspMeshMesh/espmeshmesh)
 
+## Changelog
+
+The follwoing features are supported in the last version of the network:
+
+- Auto forming networks: When the auto forming network feature is enabled news nodes are automatically added to the network and a new path to reach it is computed. 
+- Low power/battery powered nodes: Is now possible to use the deep_sleep component and use the nodes with batteries of solar panels.
+- HomeAssistant addon: The meshmeshgo is now an addon.
+
 ## Addon for Home Assistant
 
 [![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FEspMeshMesh%2Fespmeshmesh-hassio-addons)
@@ -15,6 +23,7 @@ The getting started tutorial that uses the new autoforming netowrk can be found 
 
 1. [Fast Getting Started](docs/tutorial/getting_started_starpath.md)
 2. [Running with Docker](docs/tutorial/docker_guide.md)
+3. [Deep sleep nodes](docs/tutorial/deepsleep_nodes.md)
 
 ## Other Getting started tutorials
 
