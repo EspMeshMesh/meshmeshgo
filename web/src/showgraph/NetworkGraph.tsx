@@ -26,6 +26,7 @@ type NetworkNode = {
     in_use: boolean;
     is_local: boolean;
     deep_sleep: boolean;
+    dev_type: string;
 };
 
 type NetworkLink = {
@@ -67,10 +68,15 @@ export const NetworkGraph = ({networkType}: NetworkGraphProps) => {
     }, [networkLinks]);
 
     const nodeColor = (node: NetworkNode) => {
-        if(node.is_local) return 'yellow';
+        if(node.is_local) return 'gold';
         if (!node.in_use) return 'gray';
-        if (node.deep_sleep) return 'blue';
-        return '#99ff99';
+        // edge nodes in deep sleep darkcyan
+        if (node.deep_sleep && node.dev_type == 'edge') return 'darkcyan';
+        // other nodes in deep sleep red as warning
+        if (node.deep_sleep) return 'red';
+        // edge nodes in use aqua
+        if (node.dev_type == 'edge') return 'aqua'
+        return 'seagreen';
     }
 
     return (

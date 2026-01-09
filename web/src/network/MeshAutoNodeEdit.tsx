@@ -68,6 +68,7 @@ export const MeshAutoNodeEdit = () => {
                             </>
                         )}
                     </FormDataConsumer>
+                    <TextInput source="dev_type" label="Device type" disabled />
                     <TextInput source="dev_name" label="Device name" disabled />
                     <TextInput source="dev_friendly_name" label="Device description" disabled />
                     <TextInput source="dev_firmrev" readOnly />

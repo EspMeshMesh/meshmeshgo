@@ -1,37 +1,11 @@
 package rest
 
 import (
-	"strconv"
-	"strings"
-
 	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/meshmesh"
 	"leguru.net/m/v2/meshmesh/pb"
 	"leguru.net/m/v2/utils"
 )
-
-func revisionToInteger(revision string) int {
-	if strings.Contains(revision, ",") {
-		return 0
-	}
-	parts := strings.Split(revision, ".")
-	if len(parts) != 3 {
-		return 0
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0
-	}
-	minor, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return 0
-	}
-	patch, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return 0
-	}
-	return major*1000000 + minor*1000 + patch
-}
 
 func (h *Handler) fillNodesArrays(network *graph.Network) []MeshNode {
 	nodes := network.Nodes()
@@ -39,36 +13,40 @@ func (h *Handler) fillNodesArrays(network *graph.Network) []MeshNode {
 	for nodes.Next() {
 		dev := nodes.Node().(graph.NodeDevice)
 		// Create MeshNode struct
+		d := dev.Device()
 		nodesArray = append(nodesArray, MeshNode{
 			ID:          uint(dev.ID()),
-			Tag:         string(dev.Device().Tag()),
-			InUse:       dev.Device().InUse(),
-			DeepSleep:   dev.Device().DeepSleep(),
+			Tag:         string(d.Tag()),
+			InUse:       d.InUse(),
+			DeepSleep:   d.DeepSleep(),
 			Path:        graph.FmtNodePath(network, dev),
 			IsLocal:     dev.ID() == network.LocalDeviceId(),
-			FirmRev:     dev.Device().Firmware(),
-			LibVersion:  dev.Device().LibVersion(),
-			CompileTime: formatTimeForJson(dev.Device().CompileTime()),
-			LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
-
-			compileTime: dev.Device().CompileTime(),
-			lastSeen:    dev.Device().LastSeen(),
+			FirmRev:     d.Firmware(),
+			LibVersion:  d.LibVersion(),
+			CompileTime: formatTimeForJson(d.CompileTime()),
+			LastSeen:    formatTimeForJson(d.LastSeen()),
+			DevType:     d.NodeTypeString(),
+			compileTime: d.CompileTime(),
+			lastSeen:    d.LastSeen(),
 		})
 	}
 	return nodesArray
 }
 
 func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *graph.Network) MeshNode {
+
+	d := dev.Device()
 	jsonNode := MeshNode{
 		ID:          uint(dev.ID()),
-		Tag:         string(dev.Device().Tag()),
-		InUse:       dev.Device().InUse(),
-		DeepSleep:   dev.Device().DeepSleep(),
+		Tag:         string(d.Tag()),
+		InUse:       d.InUse(),
+		DeepSleep:   d.DeepSleep(),
 		IsLocal:     dev.ID() == network.LocalDeviceId(),
-		FirmRev:     dev.Device().Firmware(),
-		LibVersion:  dev.Device().LibVersion(),
-		CompileTime: formatTimeForJson(dev.Device().CompileTime()),
-		LastSeen:    formatTimeForJson(dev.Device().LastSeen()),
+		FirmRev:     d.Firmware(),
+		LibVersion:  d.LibVersion(),
+		CompileTime: formatTimeForJson(d.CompileTime()),
+		DevType:     d.NodeTypeString(),
+		LastSeen:    formatTimeForJson(d.LastSeen()),
 		Path:        graph.FmtNodePath(network, dev),
 	}
 
@@ -77,7 +55,26 @@ func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *g
 		if err != nil {
 			jsonNode.Error = err.Error()
 		} else {
-			dev.Device().SetFirmware(jsonNode.DevRevision)
+			changed := false
+			if jsonNode.DevFriendlyName != "" && jsonNode.DevFriendlyName != d.FriendlyName() {
+				d.SetFriendlyName(jsonNode.DevFriendlyName)
+				changed = true
+			}
+			if jsonNode.LibVersion != "" && jsonNode.LibVersion != d.LibVersion() {
+				d.SetLibVersion(jsonNode.LibVersion)
+				changed = true
+			}
+			if jsonNode.DevRevision != "" && jsonNode.DevRevision != d.Firmware() {
+				d.SetFirmware(jsonNode.DevRevision)
+				changed = true
+			}
+			if jsonNode.CompileTime != "" && jsonNode.CompileTime != d.CompileTimeString() {
+				d.SetCompileTimeString(jsonNode.CompileTime)
+				changed = true
+			}
+			if changed {
+				network.NotifyNetworkChanged()
+			}
 		}
 	}
 
@@ -92,7 +89,7 @@ func (h *Handler) nodeInfoGetCmd(network *graph.Network, m *MeshNode) error {
 	}
 	rev := rep.(meshmesh.FirmRevApiReply)
 
-	if revisionToInteger(m.FirmRev) > 1004002 {
+	if utils.RevisionToInteger(m.FirmRev) > 1004002 {
 		rep, err = h.serialConn.SendReceiveApiProt(meshmesh.ProtoNodeInfoApiRequest{}, protocol, meshmesh.MeshNodeId(m.ID), network)
 		if err != nil {
 			return err
@@ -102,6 +99,7 @@ func (h *Handler) nodeInfoGetCmd(network *graph.Network, m *MeshNode) error {
 		m.CompileTime = nodeInfo.CompileTime
 		m.FirmRev = nodeInfo.FirmwareVersion
 		m.LibVersion = nodeInfo.LibVersion
+		m.DevType = graph.EnumNodeTypeToString(graph.NodeType(nodeInfo.NodeType))
 	}
 
 	rep, err = h.serialConn.SendReceiveApiProt(meshmesh.NodeConfigApiRequest{}, protocol, meshmesh.MeshNodeId(m.ID), network)

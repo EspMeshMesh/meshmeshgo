@@ -3,6 +3,7 @@ package graph
 import (
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,8 +13,42 @@ import (
 	"gonum.org/v1/gonum/graph/path"
 	"gonum.org/v1/gonum/graph/simple"
 	"leguru.net/m/v2/logger"
+	"leguru.net/m/v2/meshmesh/pb"
 	"leguru.net/m/v2/utils"
 )
+
+type NodeType int
+
+const (
+	NodeTypeBackbone NodeType = iota
+	NodeTypeCoordinator
+	NodeTypeEdge
+)
+
+func stringNodeTypeToEnum(nodeType string) NodeType {
+	if nodeType == "backbone" {
+		return NodeTypeBackbone
+	}
+	if nodeType == "coordinator" {
+		return NodeTypeCoordinator
+	}
+	if nodeType == "edge" {
+		return NodeTypeEdge
+	}
+	return NodeTypeBackbone
+}
+
+func EnumNodeTypeToString(nodeType NodeType) string {
+	switch nodeType {
+	case NodeTypeBackbone:
+		return "backbone"
+	case NodeTypeCoordinator:
+		return "coordinator"
+	case NodeTypeEdge:
+		return "edge"
+	}
+	return "backbone"
+}
 
 const (
 	NETWORK_ID_MAIN      = 0
@@ -22,7 +57,8 @@ const (
 )
 
 const (
-	compileTimeFormat = "Jan _2 2006, 15:04:05"
+	compileTimeFormat      = "Jan _2 2006, 15:04:05"
+	compileTimeFormatShort = "Jan _2 2006"
 )
 
 type Device struct {
@@ -30,6 +66,7 @@ type Device struct {
 	deepSleep    bool
 	discovered   bool
 	tag          string
+	nodeType     NodeType
 	name         string
 	friendlyName string
 	firmware     string
@@ -68,6 +105,22 @@ func (d *Device) Tag() string {
 
 func (d *Device) SetTag(tag string) {
 	d.tag = tag
+}
+
+func (d *Device) NodeType() NodeType {
+	return d.nodeType
+}
+
+func (d *Device) NodeTypeString() string {
+	return EnumNodeTypeToString(d.nodeType)
+}
+
+func (d *Device) SetNodeType(nodeType NodeType) {
+	d.nodeType = nodeType
+}
+
+func (d *Device) SetNodeTypeString(nodeType string) {
+	d.nodeType = stringNodeTypeToEnum(nodeType)
 }
 
 func (d *Device) Name() string {
@@ -110,7 +163,18 @@ func (d *Device) SetCompileTime(compileTime time.Time) {
 }
 
 func (d *Device) SetCompileTimeString(compileTime string) {
-	d.compileTime, _ = time.Parse(compileTimeFormat, compileTime)
+	var err error
+	d.compileTime, err = time.Parse(compileTimeFormat, compileTime)
+	if err != nil {
+		sep := strings.Index(compileTime, ",")
+		if sep != -1 {
+			compileTime = compileTime[:sep]
+		}
+		d.compileTime, err = time.Parse(compileTimeFormatShort, compileTime)
+		if err != nil {
+			d.compileTime = time.Time{}
+		}
+	}
 }
 
 func (d *Device) LibVersion() string {
@@ -216,14 +280,30 @@ func (g *Network) NotifyNetworkChanged() {
 	}
 }
 
-func (g *Network) LocalDeviceIdChanged(nodeId int64) {
-	if g.localDeviceId == nodeId {
+func (g *Network) LocalDeviceIdChanged(nodeId int64, nodeInfo *pb.NodeInfo) {
+	if nodeId == 0 {
 		return
 	}
-	g.localDeviceId = nodeId
-	if nodeId > 0 && !g.NodeIdExists(nodeId) {
-		g.AddNode(NewNodeDevice(nodeId, true, "local"))
-		logger.WithField("device", utils.FmtNodeId(nodeId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
+
+	if g.localDeviceId != nodeId {
+		g.localDeviceId = nodeId
+		if nodeId > 0 && !g.NodeIdExists(nodeId) {
+			g.AddNode(NewNodeDevice(nodeId, true, "local"))
+			logger.WithField("device", utils.FmtNodeId(nodeId)).Warn("Local device not found in graph, adding it. Will be an isolated node")
+		}
+	}
+
+	if nodeInfo != nil {
+		dev, err := g.GetNodeDevice(nodeId)
+		if err != nil {
+			logger.WithField("device", utils.FmtNodeId(nodeId)).Error("Failed to get local device")
+			return
+		}
+		dev.Device().SetNodeType(NodeType(nodeInfo.NodeType))
+		dev.Device().SetFriendlyName(nodeInfo.FriendlyName)
+		dev.Device().SetFirmware(nodeInfo.FirmwareVersion)
+		dev.Device().SetLibVersion(nodeInfo.LibVersion)
+		dev.Device().SetCompileTimeString(nodeInfo.CompileTime)
 	}
 	g.NotifyNetworkChanged()
 }

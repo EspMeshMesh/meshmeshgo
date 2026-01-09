@@ -13,6 +13,7 @@ import (
 	gra "leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/meshmesh"
+	"leguru.net/m/v2/meshmesh/pb"
 	"leguru.net/m/v2/rest"
 	"leguru.net/m/v2/rpc"
 	"leguru.net/m/v2/utils"
@@ -153,8 +154,8 @@ func handleDiscAssociateReply(v *meshmesh.DiscAssociateApiReply, serialPort *mes
 }
 
 /* Serial coordinator node id changed callback */
-func localNodeIdChangedCallback(meshNodeId meshmesh.MeshNodeId) {
-	gra.GetMainNetwork().LocalDeviceIdChanged(int64(meshNodeId))
+func localNodeIdChangedCallback(meshNodeId meshmesh.MeshNodeId, nodeInfo *pb.NodeInfo) {
+	gra.GetMainNetwork().LocalDeviceIdChanged(int64(meshNodeId), nodeInfo)
 }
 
 // @title           Meshmesh API

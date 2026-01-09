@@ -3,6 +3,13 @@ import { formatNodeId } from "../utils";
 
 
 export const MeshAutoNodesList = () => {
+
+    const formatDevType = (dev_type: string) => {
+        if (dev_type == 'edge') return 'E';
+        if (dev_type == 'coordinato') return 'C';
+        return 'B';
+    }
+
     return <List sort={{ field: "id", order: "ASC" }}>
         <DataTable bulkActionButtons={false}>
             <DataTable.Col source="id" render={record => formatNodeId(record.id)} />
@@ -15,6 +22,7 @@ export const MeshAutoNodesList = () => {
             <DataTable.Col source="last_seen" label="Last seen">
                 <DateField source="last_seen" showTime={true} showDate={true} />
             </DataTable.Col>
+            <DataTable.Col source="dev_type" label="Type" render={record => formatDevType(record.dev_type)}/>
             <DataTable.Col source="in_use">
                 <BooleanField source="in_use" />
             </DataTable.Col>

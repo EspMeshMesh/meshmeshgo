@@ -82,7 +82,7 @@ func (s *StarPath) handleProtoPresentationRxReply(data any) {
 		return
 	}
 
-	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress)), "type": v.NodePresentation.Type}).Info("NodePresentstionReply")
+	logger.WithFields(logger.Fields{"source": utils.FmtNodeId(int64(v.PathRouting.SourceAddress)), "target": utils.FmtNodeId(int64(v.PathRouting.TargetAddress)), "type": v.NodePresentation.Type, "nodeType": v.NodePresentation.NodeType}).Info("NodePresentstionReply")
 	logger.WithFields(logger.Fields{"hostname": v.NodePresentation.Hostname, "firmware": v.NodePresentation.FirmwareVersion, "compile_time": v.NodePresentation.CompileTime, "lib_version": v.NodePresentation.LibVersion}).Info("NodePresentstionReply")
 	logger.WithFields(logger.Fields{"repeaters": len(v.PathRouting.Repeaters), "rssi": len(v.PathRouting.Repeaters)}).Info("NodePresentationReply")
 	logger.WithFields(logger.Fields{"path": s.buildPathString(int32(v.PathRouting.SourceAddress), int32(v.PathRouting.TargetAddress), v.PathRouting.Repeaters, v.PathRouting.Rssi)}).Info("PathRouting received")
@@ -103,6 +103,7 @@ func (s *StarPath) handleProtoPresentationRxReply(data any) {
 		sourceNode.Device().SetCompileTimeString(v.NodePresentation.CompileTime)
 		sourceNode.Device().SetLibVersion(v.NodePresentation.LibVersion)
 		sourceNode.Device().SetDeepSleep(v.NodePresentation.Type == pb.NodePresentationFlags_NODE_PRESENTATION_TYPE_GOODBYE)
+		sourceNode.Device().SetNodeType(graph.NodeType(v.NodePresentation.NodeType))
 		sourceNode.Device().SetLastSeen(time.Now())
 
 		if sourceNodeIsNew {

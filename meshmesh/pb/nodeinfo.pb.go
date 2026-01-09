@@ -7,11 +7,12 @@
 package pb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -30,6 +31,7 @@ type NodeInfo struct {
 	Board           string                 `protobuf:"bytes,5,opt,name=board,proto3" json:"board,omitempty"`
 	CompileTime     string                 `protobuf:"bytes,6,opt,name=compile_time,json=compileTime,proto3" json:"compile_time,omitempty"`
 	LibVersion      string                 `protobuf:"bytes,7,opt,name=lib_version,json=libVersion,proto3" json:"lib_version,omitempty"`
+	NodeType        int32                  `protobuf:"varint,8,opt,name=node_type,json=nodeType,proto3" json:"node_type,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -113,11 +115,18 @@ func (x *NodeInfo) GetLibVersion() string {
 	return ""
 }
 
+func (x *NodeInfo) GetNodeType() int32 {
+	if x != nil {
+		return x.NodeType
+	}
+	return 0
+}
+
 var File_nodeinfo_proto protoreflect.FileDescriptor
 
 const file_nodeinfo_proto_rawDesc = "" +
 	"\n" +
-	"\x0enodeinfo.proto\x12\vespmeshmesh\"\xf1\x01\n" +
+	"\x0enodeinfo.proto\x12\vespmeshmesh\"\x8e\x02\n" +
 	"\bNodeInfo\x12#\n" +
 	"\rfriendly_name\x18\x01 \x01(\tR\ffriendlyName\x12)\n" +
 	"\x10firmware_version\x18\x02 \x01(\tR\x0ffirmwareVersion\x12\x1f\n" +
@@ -127,7 +136,8 @@ const file_nodeinfo_proto_rawDesc = "" +
 	"\x05board\x18\x05 \x01(\tR\x05board\x12!\n" +
 	"\fcompile_time\x18\x06 \x01(\tR\vcompileTime\x12\x1f\n" +
 	"\vlib_version\x18\a \x01(\tR\n" +
-	"libVersionB\x0fZ\r./meshmesh/pbb\x06proto3"
+	"libVersion\x12\x1b\n" +
+	"\tnode_type\x18\b \x01(\x05R\bnodeTypeB\x0fZ\r./meshmesh/pbb\x06proto3"
 
 var (
 	file_nodeinfo_proto_rawDescOnce sync.Once

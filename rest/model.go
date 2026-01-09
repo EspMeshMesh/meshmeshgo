@@ -65,6 +65,7 @@ type MeshNode struct {
 	LibVersion      string `json:"libvers"`
 	Path            string `json:"path"`
 	Error           string `json:"error"`
+	DevType         string `json:"dev_type"`
 	DevName         string `json:"dev_name"`
 	DevFriendlyName string `json:"dev_friendly_name"`
 	DevRevision     string `json:"dev_firmrev"`

@@ -70,6 +70,55 @@ func (NodePresentationFlags) EnumDescriptor() ([]byte, []int) {
 	return file_nodepresentation_proto_rawDescGZIP(), []int{0}
 }
 
+type NodeType int32
+
+const (
+	NodeType_NODE_TYPE_BACKBONE    NodeType = 0
+	NodeType_NODE_TYPE_COORDINATOR NodeType = 1
+	NodeType_NODE_TYPE_EDGE        NodeType = 2
+)
+
+// Enum value maps for NodeType.
+var (
+	NodeType_name = map[int32]string{
+		0: "NODE_TYPE_BACKBONE",
+		1: "NODE_TYPE_COORDINATOR",
+		2: "NODE_TYPE_EDGE",
+	}
+	NodeType_value = map[string]int32{
+		"NODE_TYPE_BACKBONE":    0,
+		"NODE_TYPE_COORDINATOR": 1,
+		"NODE_TYPE_EDGE":        2,
+	}
+)
+
+func (x NodeType) Enum() *NodeType {
+	p := new(NodeType)
+	*p = x
+	return p
+}
+
+func (x NodeType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (NodeType) Descriptor() protoreflect.EnumDescriptor {
+	return file_nodepresentation_proto_enumTypes[1].Descriptor()
+}
+
+func (NodeType) Type() protoreflect.EnumType {
+	return &file_nodepresentation_proto_enumTypes[1]
+}
+
+func (x NodeType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use NodeType.Descriptor instead.
+func (NodeType) EnumDescriptor() ([]byte, []int) {
+	return file_nodepresentation_proto_rawDescGZIP(), []int{1}
+}
+
 type NodePresentation struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Hostname        string                 `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
@@ -77,6 +126,7 @@ type NodePresentation struct {
 	CompileTime     string                 `protobuf:"bytes,3,opt,name=compile_time,json=compileTime,proto3" json:"compile_time,omitempty"`
 	LibVersion      string                 `protobuf:"bytes,4,opt,name=lib_version,json=libVersion,proto3" json:"lib_version,omitempty"`
 	Type            NodePresentationFlags  `protobuf:"varint,5,opt,name=type,proto3,enum=espmeshmesh.NodePresentationFlags" json:"type,omitempty"`
+	NodeType        NodeType               `protobuf:"varint,6,opt,name=node_type,json=nodeType,proto3,enum=espmeshmesh.NodeType" json:"node_type,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -146,22 +196,34 @@ func (x *NodePresentation) GetType() NodePresentationFlags {
 	return NodePresentationFlags_NODE_PRESENTATION_TYPE_HELLO
 }
 
+func (x *NodePresentation) GetNodeType() NodeType {
+	if x != nil {
+		return x.NodeType
+	}
+	return NodeType_NODE_TYPE_BACKBONE
+}
+
 var File_nodepresentation_proto protoreflect.FileDescriptor
 
 const file_nodepresentation_proto_rawDesc = "" +
 	"\n" +
-	"\x16nodepresentation.proto\x12\vespmeshmesh\"\xd5\x01\n" +
+	"\x16nodepresentation.proto\x12\vespmeshmesh\"\x89\x02\n" +
 	"\x10NodePresentation\x12\x1a\n" +
 	"\bhostname\x18\x01 \x01(\tR\bhostname\x12)\n" +
 	"\x10firmware_version\x18\x02 \x01(\tR\x0ffirmwareVersion\x12!\n" +
 	"\fcompile_time\x18\x03 \x01(\tR\vcompileTime\x12\x1f\n" +
 	"\vlib_version\x18\x04 \x01(\tR\n" +
 	"libVersion\x126\n" +
-	"\x04type\x18\x05 \x01(\x0e2\".espmeshmesh.NodePresentationFlagsR\x04type*\x81\x01\n" +
+	"\x04type\x18\x05 \x01(\x0e2\".espmeshmesh.NodePresentationFlagsR\x04type\x122\n" +
+	"\tnode_type\x18\x06 \x01(\x0e2\x15.espmeshmesh.NodeTypeR\bnodeType*\x81\x01\n" +
 	"\x15NodePresentationFlags\x12 \n" +
 	"\x1cNODE_PRESENTATION_TYPE_HELLO\x10\x00\x12\"\n" +
 	"\x1eNODE_PRESENTATION_TYPE_GOODBYE\x10\x01\x12\"\n" +
-	"\x1eNODE_PRESENTATION_TYPE_REFRESH\x10\x02B\x0fZ\r./meshmesh/pbb\x06proto3"
+	"\x1eNODE_PRESENTATION_TYPE_REFRESH\x10\x02*Q\n" +
+	"\bNodeType\x12\x16\n" +
+	"\x12NODE_TYPE_BACKBONE\x10\x00\x12\x19\n" +
+	"\x15NODE_TYPE_COORDINATOR\x10\x01\x12\x12\n" +
+	"\x0eNODE_TYPE_EDGE\x10\x02B\x0fZ\r./meshmesh/pbb\x06proto3"
 
 var (
 	file_nodepresentation_proto_rawDescOnce sync.Once
@@ -175,19 +237,21 @@ func file_nodepresentation_proto_rawDescGZIP() []byte {
 	return file_nodepresentation_proto_rawDescData
 }
 
-var file_nodepresentation_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_nodepresentation_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_nodepresentation_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_nodepresentation_proto_goTypes = []any{
 	(NodePresentationFlags)(0), // 0: espmeshmesh.NodePresentationFlags
-	(*NodePresentation)(nil),   // 1: espmeshmesh.NodePresentation
+	(NodeType)(0),              // 1: espmeshmesh.NodeType
+	(*NodePresentation)(nil),   // 2: espmeshmesh.NodePresentation
 }
 var file_nodepresentation_proto_depIdxs = []int32{
 	0, // 0: espmeshmesh.NodePresentation.type:type_name -> espmeshmesh.NodePresentationFlags
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	1, // 1: espmeshmesh.NodePresentation.node_type:type_name -> espmeshmesh.NodeType
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_nodepresentation_proto_init() }
@@ -200,7 +264,7 @@ func file_nodepresentation_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_nodepresentation_proto_rawDesc), len(file_nodepresentation_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -117,3 +117,26 @@ func ToFQDN(tag string, domain string) string {
 	str = strings.Replace(str, ".", "_", -1)
 	return str + "." + domain + "."
 }
+
+func RevisionToInteger(revision string) int {
+	if strings.Contains(revision, ",") {
+		return 0
+	}
+	parts := strings.Split(revision, ".")
+	if len(parts) != 3 {
+		return 0
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0
+	}
+	minor, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0
+	}
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return 0
+	}
+	return major*1000000 + minor*1000 + patch
+}

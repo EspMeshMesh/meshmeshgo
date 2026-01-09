@@ -15,6 +15,7 @@ import (
 	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/logger"
 	pb "leguru.net/m/v2/meshmesh/pb"
+	"leguru.net/m/v2/utils"
 )
 
 const defaultSessionMaxTimeoutMs = 500
@@ -74,7 +75,7 @@ type SerialConnection struct {
 	DiscAssociateFn       func(*DiscAssociateApiReply, *SerialConnection)
 	ProtoPresentationFn   func(*pb.NodePresentationRx, *SerialConnection)
 	FrameReceivedCallback []FrameReceivedCallback
-	localNodeIdChangedCb  func(meshNodeId MeshNodeId)
+	localNodeIdChangedCb  func(meshNodeId MeshNodeId, nodeInfo *pb.NodeInfo)
 	lastUseTime           time.Time
 }
 
@@ -486,7 +487,7 @@ func (serialConn *SerialConnection) closePort() error {
 	return err
 }
 
-func (serialConn *SerialConnection) SetLocalNodeIdChangedCb(cb func(meshNodeId MeshNodeId)) {
+func (serialConn *SerialConnection) SetLocalNodeIdChangedCb(cb func(meshNodeId MeshNodeId, nodeInfo *pb.NodeInfo)) {
 	serialConn.localNodeIdChangedCb = cb
 }
 
@@ -577,15 +578,27 @@ func (serialConn *SerialConnection) openPort() error {
 		return errors.New("invalid firmware reply")
 	}
 
-	if serialConn.LocalNode != uint32(nodeid.Serial) {
-		if serialConn.localNodeIdChangedCb != nil {
-			serialConn.localNodeIdChangedCb(nodeid.Serial)
+	var nodeInfo *pb.NodeInfo
+	if utils.RevisionToInteger(utils.TruncateZeros(firmrev.Revision)) > 1004002 {
+		reply4, err := serialConn.SendReceiveApi(ProtoNodeInfoApiRequest{})
+		if err != nil {
+			logger.Log().WithError(err).Warn("SerialConnection.openPort: failed to send proto node info api request")
+		} else {
+			nodeInfo = reply4.(*pb.NodeInfo)
+			logger.Log().WithFields(logrus.Fields{"friendlyName": nodeInfo.FriendlyName, "firmwareVersion": nodeInfo.FirmwareVersion}).Info("Node info received")
+			logger.Log().WithFields(logrus.Fields{"macAddress": nodeInfo.MacAddress, "platform": nodeInfo.Platform}).Info("Node info received")
+			logger.Log().WithFields(logrus.Fields{"board": nodeInfo.Board, "compileTime": nodeInfo.CompileTime}).Info("Node info received")
+			logger.Log().WithFields(logrus.Fields{"libVersion": nodeInfo.LibVersion, "nodeType": nodeInfo.NodeType}).Info("Node info received")
 		}
 	}
 
 	serialConn.LocalNode = uint32(nodeid.Serial)
-	logger.Log().WithFields(logrus.Fields{"nodeId": fmt.Sprintf("0x%06X", serialConn.LocalNode), "firmware": firmrev.Revision}).
-		Info("Valid local node found")
+
+	if serialConn.LocalNode != uint32(nodeid.Serial) {
+		if serialConn.localNodeIdChangedCb != nil {
+			serialConn.localNodeIdChangedCb(nodeid.Serial, nodeInfo)
+		}
+	}
 
 	return nil
 }

@@ -88,6 +88,7 @@ func (g *Network) readGraph(filename string) error {
 				dev.Device().SetLastSeen(parseTime(attrs, "lastseen"))
 				dev.Device().SetLibVersion(parseString(attrs, "libvers"))
 				dev.Device().SetDeepSleep(parseBool(attrs, "deepsleep"))
+				dev.Device().SetNodeTypeString(parseString(attrs, "nodetype"))
 
 				if dev.Device().Name() == "" {
 					dev.Device().SetName(n.Description)
@@ -140,6 +141,7 @@ func (g *Network) writeGraph(filename string) error {
 	gml.RegisterKey(graphml.KeyForNode, "discover", "state variable for discovery", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "buggy", "state variable fr functional status", reflect.Bool, false)
 	gml.RegisterKey(graphml.KeyForNode, "name", "the node name", reflect.String, "")
+	gml.RegisterKey(graphml.KeyForNode, "nodetype", "the node type", reflect.String, "backbone")
 	gml.RegisterKey(graphml.KeyForNode, "friendlyname", "the node friendly name", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "firmware", "the node firmware revision", reflect.String, "")
 	gml.RegisterKey(graphml.KeyForNode, "libvers", "the mesh library version", reflect.String, "")
@@ -162,6 +164,7 @@ func (g *Network) writeGraph(filename string) error {
 			"deepsleep":    node.Device().DeepSleep(),
 			"discovered":   node.Device().Discovered(),
 			"name":         node.Device().Name(),
+			"nodetype":     node.Device().NodeTypeString(),
 			"friendlyname": node.Device().FriendlyName(),
 			"firmware":     node.Device().Firmware(),
 			"libvers":      node.Device().LibVersion(),

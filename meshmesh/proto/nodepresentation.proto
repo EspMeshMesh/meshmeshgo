@@ -9,11 +9,18 @@ enum NodePresentationFlags {
   NODE_PRESENTATION_TYPE_REFRESH = 2;
 }
 
+enum NodeType {
+  NODE_TYPE_BACKBONE = 0;
+  NODE_TYPE_COORDINATOR = 1;
+  NODE_TYPE_EDGE = 2;
+}
+
 message NodePresentation {
   string hostname = 1;
   string firmware_version = 2;
   string compile_time = 3;
   string lib_version = 4;
   NodePresentationFlags type = 5;
+  NodeType node_type = 6;
 }
 
