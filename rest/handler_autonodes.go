@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"leguru.net/m/v2/logger"
+	"leguru.net/m/v2/meshmesh"
 )
 
 // @Id getAutoNodes
@@ -102,5 +104,58 @@ func (h *Handler) deleteAutoNode(c *gin.Context) {
 	network.RemoveNode(int64(id))
 	network.NotifyNetworkChanged()
 
+	c.JSON(http.StatusOK, jsonNode)
+}
+
+// @Id updateAutoNode
+// @Summary Update auto node
+// @Tags    AutoNodes
+// @Accept  json
+// @Produce json
+// @Param   id path string true "Auto Node ID"
+// @Param   node body UpdateAutoNodeRequest true "Update auto node request"
+// @Success 200 {object} MeshNode
+// @Failure 400 {object} string
+// @Router /api/autoNodes/{id} [put]
+func (h *Handler) updateAutoNode(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	req := UpdateNodeRequest{}
+	err = c.ShouldBindJSON(&req)
+	if err != nil {
+		_ = c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	network := h.starPath.GetNetwork()
+	dev, err := network.GetNodeDevice(int64(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "Node not found: " + err.Error()})
+		return
+	}
+
+	dev.Device().SetTag(req.Tag)
+	dev.Device().SetInUse(req.InUse)
+	network.NotifyNetworkChanged()
+
+	jsonNode := h.fillNodeStruct(dev, true, network)
+	errors := []error{}
+
+	if req.Channel != (int8)(jsonNode.Channel) {
+		protocol := meshmesh.FindBestProtocol(meshmesh.MeshNodeId(dev.ID()), network)
+		_, err := h.serialConn.SendReceiveApiProt(meshmesh.NodeSetChannelApiRequest{Channel: uint8(req.Channel)}, protocol, meshmesh.MeshNodeId(dev.ID()), network)
+		if err != nil {
+			errors = append(errors, err)
+		} else {
+			jsonNode.Channel = req.Channel
+		}
+	}
+
+	logger.Log().WithField("errors", errors).Info("Node update errors")
 	c.JSON(http.StatusOK, jsonNode)
 }

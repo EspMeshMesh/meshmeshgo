@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"leguru.net/m/v2/graph"
 	"leguru.net/m/v2/meshmesh"
 )
 
@@ -19,8 +20,14 @@ func (h *Handler) rebootNode(c *gin.Context) {
 	network := h.starPath.GetNetwork()
 	dev, err := network.GetNodeDevice(int64(id))
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Node not found: " + err.Error()})
-		return
+
+		network := graph.GetMainNetwork()
+
+		dev, err = network.GetNodeDevice(int64(id))
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": "Node not found: " + err.Error()})
+			return
+		}
 	}
 
 	protocol := meshmesh.FindBestProtocol(meshmesh.MeshNodeId(dev.ID()), network)

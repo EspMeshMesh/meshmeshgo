@@ -22,6 +22,7 @@ import (
 const (
 	programName           = "meshmeshgo"
 	programDescription    = "hub server for meshmesh network"
+	programRevision       = "1.4.5"
 	graphFilename         = "meshmesh.graphml"
 	starPathGraphFilename = "starpath.graphml"
 )
@@ -177,7 +178,7 @@ func main() {
 	getBuildInfo()
 	go waitForTermination()
 
-	logger.WithFields(logger.Fields{"programName": programName}).Info(programDescription)
+	logger.WithFields(logger.Fields{"programName": programName, "programRevision": programRevision}).Info(programDescription)
 	logger.WithFields(logger.Fields{"vcsHash": vcsHash, "vcsTime": vcsTime, "vcsDirty": vcsDirty}).Info("Startup information")
 
 	config := initConfig()
@@ -236,6 +237,7 @@ func main() {
 
 	// Start rest server
 	restHandler := rest.NewHandler(serialPort, multiSocketServer, starPath)
+	rest.SetHelloResponseData(programName, programDescription, programRevision)
 	rest.StartRestServer(rest.NewRouter(restHandler), config.RestBindAddress)
 
 	var lastStatsTime time.Time

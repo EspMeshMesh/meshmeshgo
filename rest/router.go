@@ -44,6 +44,9 @@ func (s router) Register(g gin.IRouter) {
 	g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r := g.Group("/api/v1")
+
+	r.GET("/hello", h.getHello)
+
 	nodesGroup := r.Group("/nodes")
 	{
 		nodesGroup.GET("", h.getNodes)
@@ -71,6 +74,7 @@ func (s router) Register(g gin.IRouter) {
 	{
 		autoNodesGroup.GET("", h.getAutoNodes)
 		autoNodesGroup.GET("/:id", h.getOneAutoNode)
+		autoNodesGroup.PUT("/:id", h.updateAutoNode)
 		autoNodesGroup.DELETE("/:id", h.deleteAutoNode)
 	}
 
