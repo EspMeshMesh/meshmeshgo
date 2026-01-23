@@ -59,6 +59,7 @@ const (
 const (
 	compileTimeFormat      = "Jan _2 2006, 15:04:05"
 	compileTimeFormatShort = "Jan _2 2006"
+	compileTimeFormatLong  = "2006-01-02 15:04:05 -0700"
 )
 
 type Device struct {
@@ -164,17 +165,22 @@ func (d *Device) SetCompileTime(compileTime time.Time) {
 
 func (d *Device) SetCompileTimeString(compileTime string) {
 	var err error
-	d.compileTime, err = time.Parse(compileTimeFormat, compileTime)
+
+	d.compileTime, err = time.Parse(compileTimeFormatLong, compileTime)
 	if err != nil {
-		sep := strings.Index(compileTime, ",")
-		if sep != -1 {
-			compileTime = compileTime[:sep]
-		}
-		d.compileTime, err = time.Parse(compileTimeFormatShort, compileTime)
+		d.compileTime, err = time.Parse(compileTimeFormat, compileTime)
 		if err != nil {
-			d.compileTime = time.Time{}
+			sep := strings.Index(compileTime, ",")
+			if sep != -1 {
+				compileTime = compileTime[:sep]
+			}
+			d.compileTime, err = time.Parse(compileTimeFormatShort, compileTime)
+			if err != nil {
+				d.compileTime = time.Time{}
+			}
 		}
 	}
+
 }
 
 func (d *Device) LibVersion() string {
