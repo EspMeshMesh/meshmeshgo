@@ -62,6 +62,33 @@ func getBuildInfo() {
 	}
 }
 
+func initSerialPort(config *config.Config) *meshmesh.SerialConnection {
+	var err error
+	var serialPort *meshmesh.SerialConnection = nil
+
+	var lastStart time.Time
+	for {
+		if quitProgram {
+			return nil
+		}
+
+		if time.Since(lastStart) > 5*time.Second {
+			lastStart = time.Now()
+			serialPort, err = meshmesh.NewSerial(config.SerialPortName, config.SerialPortBaudRate, config.SerialIsEsp8266, config.SerialResetOnInit, false)
+			if err != nil {
+				logger.WithFields(logger.Fields{"error": err}).Warn("Serial port error: ")
+			} else {
+				if serialPort.IsConnected() {
+					break
+				}
+			}
+			serialPort = nil
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+	return serialPort
+}
+
 func initConfig() *config.Config {
 	c, err := config.NewConfig()
 	if err != nil {
@@ -188,19 +215,12 @@ func main() {
 
 	logger.WithFields(logger.Fields{"portName": config.SerialPortName, "baudRate": config.SerialPortBaudRate}).Debug("Opening serial port")
 
-	var err error
-	var serialPort *meshmesh.SerialConnection
-
-	for {
-		serialPort, err = meshmesh.NewSerial(config.SerialPortName, config.SerialPortBaudRate, config.SerialIsEsp8266, config.SerialResetOnInit, false)
-		if err != nil {
-			logger.Log().Warn("Serial port error: ", err)
-			time.Sleep(5 * time.Second)
-		}
-		if serialPort.IsConnected() {
-			break
-		}
+	serialPort := initSerialPort(config)
+	if serialPort == nil {
+		logger.Fatal("Failed to initialize serial port")
+		return
 	}
+
 	serialPort.SetLocalNodeIdChangedCb(localNodeIdChangedCallback)
 
 	// Init main network graph
