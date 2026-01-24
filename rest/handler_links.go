@@ -144,7 +144,7 @@ func (h *Handler) createLink(c *gin.Context) {
 	}
 
 	network.ChangeEdgeWeight(req.From, req.To, float64(req.Weight), float64(req.Weight))
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	edge := network.WeightedEdge(req.From, req.To)
 	if edge == nil {
@@ -190,7 +190,7 @@ func (h *Handler) updateLink(c *gin.Context) {
 	}
 
 	network.ChangeEdgeWeight(int64(fromID), int64(toID), float64(req.Weight), float64(req.Weight))
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	jsonLink := fillLinkStruct(edge)
 	c.JSON(http.StatusOK, jsonLink)
@@ -222,7 +222,7 @@ func (h *Handler) deleteLink(c *gin.Context) {
 	}
 
 	network.RemoveEdge(int64(fromID), int64(toID))
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	jsonLink := fillLinkStruct(edge)
 	c.JSON(http.StatusOK, jsonLink)

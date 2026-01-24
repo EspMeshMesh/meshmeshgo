@@ -248,13 +248,13 @@ func SetMainNetwork(network *Network) {
 	mainNetwork = network
 	mainNetwork.networkId = NETWORK_ID_MAIN
 	mainNetworkLock.Unlock()
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 }
 
 type Network struct {
 	simple.WeightedDirectedGraph
 	localDeviceId           int64
-	networkChangedCallbacks []func(network *Network)
+	networkChangedCallbacks []func(network *Network, noBackup bool)
 	networkId               int
 }
 
@@ -276,13 +276,13 @@ func (g *Network) NetworkId() int {
 	return g.networkId
 }
 
-func (g *Network) AddNetworkChangedCallback(cb func(network *Network)) {
+func (g *Network) AddNetworkChangedCallback(cb func(network *Network, noBackup bool)) {
 	g.networkChangedCallbacks = append(g.networkChangedCallbacks, cb)
 }
 
-func (g *Network) NotifyNetworkChanged() {
+func (g *Network) NotifyNetworkChanged(noBackup bool) {
 	for _, cb := range g.networkChangedCallbacks {
-		cb(g)
+		cb(g, noBackup)
 	}
 }
 
@@ -311,7 +311,7 @@ func (g *Network) LocalDeviceIdChanged(nodeId int64, nodeInfo *pb.NodeInfo) {
 		dev.Device().SetLibVersion(nodeInfo.LibVersion)
 		dev.Device().SetCompileTimeString(nodeInfo.CompileTime)
 	}
-	g.NotifyNetworkChanged()
+	g.NotifyNetworkChanged(false)
 }
 
 func (g *Network) LocalDeviceId() int64 {

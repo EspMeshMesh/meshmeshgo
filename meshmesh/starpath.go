@@ -120,7 +120,8 @@ func (s *StarPath) handleProtoPresentationRxReply(data any) {
 			s.refreshInputEdges(int64(path[i]), int64(path[i+1]), CostToWeight(int16(v.PathRouting.Rssi[i])))
 		}
 
-		s.network.NotifyNetworkChanged()
+		// Reduce unmber of backups for lowpower nodes resuming from sleep
+		s.network.NotifyNetworkChanged(sourceNode.Device().NodeType() == graph.NodeTypeEdge && sourceNodeIsNew)
 	}
 }
 

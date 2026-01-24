@@ -90,7 +90,7 @@ func (h *Handler) createNode(c *gin.Context) {
 
 	dev := graph.NewNodeDevice(int64(req.ID), req.InUse, req.Tag)
 	network.AddNode(dev)
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
@@ -161,7 +161,7 @@ func (h *Handler) updateNode(c *gin.Context) {
 
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.InUse)
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	jsonNode := h.fillNodeStruct(dev, true, network)
 	errors := []error{}
@@ -207,7 +207,7 @@ func (h *Handler) deleteNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
 	network.RemoveNode(int64(id))
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	c.JSON(http.StatusOK, jsonNode)
 }

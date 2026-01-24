@@ -73,7 +73,7 @@ func (h *Handler) fillNodeStruct(dev graph.NodeDevice, withInfo bool, network *g
 				changed = true
 			}
 			if changed {
-				network.NotifyNetworkChanged()
+				network.NotifyNetworkChanged(false)
 			}
 		}
 	}

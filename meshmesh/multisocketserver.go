@@ -27,7 +27,7 @@ func (m *MultiSocketServer) ShutdownServer(addr MeshNodeId) {
 func (m *MultiSocketServer) StarPathProtocol(starpath *StarPath) {
 	m.starPathNetwork = starpath.network
 	m.starPathNetwork.AddNetworkChangedCallback(m.networkChanged)
-	m.networkChanged(m.starPathNetwork)
+	m.networkChanged(m.starPathNetwork, false)
 }
 
 func (m *MultiSocketServer) serverAddressExists(nodeId MeshNodeId) bool {
@@ -69,7 +69,7 @@ func (m *MultiSocketServer) createApiAndOtaServers(nodeId MeshNodeId, network *g
 	}
 }
 
-func (m *MultiSocketServer) networkChanged(network *graph.Network) {
+func (m *MultiSocketServer) networkChanged(network *graph.Network, noBackup bool) {
 	logger.WithFields(logger.Fields{"network": network.NetworkId()}).Info("MultiSocketServer.networkChanged")
 	nodes := network.Nodes()
 	for nodes.Next() {
@@ -123,6 +123,6 @@ func NewMultiSocketServer(serialProxy *ConnectedPath2Serial, config ServerApiCon
 
 	multisrv.mainNetwork = graph.GetMainNetwork()
 	multisrv.mainNetwork.AddNetworkChangedCallback(multisrv.networkChanged)
-	multisrv.networkChanged(multisrv.mainNetwork)
+	multisrv.networkChanged(multisrv.mainNetwork, false)
 	return &multisrv
 }

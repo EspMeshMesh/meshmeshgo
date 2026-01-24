@@ -102,7 +102,7 @@ func (h *Handler) deleteAutoNode(c *gin.Context) {
 	jsonNode := h.fillNodeStruct(dev, false, network)
 
 	network.RemoveNode(int64(id))
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	c.JSON(http.StatusOK, jsonNode)
 }
@@ -141,7 +141,7 @@ func (h *Handler) updateAutoNode(c *gin.Context) {
 
 	dev.Device().SetTag(req.Tag)
 	dev.Device().SetInUse(req.InUse)
-	network.NotifyNetworkChanged()
+	network.NotifyNetworkChanged(false)
 
 	jsonNode := h.fillNodeStruct(dev, true, network)
 	errors := []error{}

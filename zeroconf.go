@@ -70,7 +70,7 @@ func (z *ZeroconfResponder) removeService(name string) error {
 	return nil
 }
 
-func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network) {
+func (z *ZeroconfResponder) networkChangedCallback(network *graph.Network, noBackup bool) {
 	logger.WithFields(logger.Fields{"network": network.NetworkId()}).Info("ZeroconfResponder.networkChangedCallback")
 	nodes := network.Nodes()
 	for nodes.Next() {
@@ -99,7 +99,7 @@ func (z *ZeroconfResponder) Start(network *graph.Network) error {
 	}
 
 	network.AddNetworkChangedCallback(z.networkChangedCallback)
-	z.networkChangedCallback(network)
+	z.networkChangedCallback(network, false)
 
 	z.ctx, z.cancel = context.WithCancel(context.Background())
 	go z.rp.Respond(z.ctx)

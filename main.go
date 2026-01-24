@@ -119,13 +119,17 @@ func initConfig() *config.Config {
 	return c
 }
 
-func mainNetworkChangedCallback(network *gra.Network) {
+func mainNetworkChangedCallback(network *gra.Network, noBackup bool) {
 	//setupMdns()
-	network.SaveToFile(graphFilename)
+	if !noBackup {
+		network.SaveToFile(graphFilename)
+	}
 }
 
-func starPathNetworkChangedCallback(network *gra.Network) {
-	network.SaveToFile(starPathGraphFilename)
+func starPathNetworkChangedCallback(network *gra.Network, noBackup bool) {
+	if !noBackup {
+		network.SaveToFile(starPathGraphFilename)
+	}
 }
 
 func initNetwork(localNodeId int64) *gra.Network {

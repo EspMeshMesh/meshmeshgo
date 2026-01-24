@@ -19,6 +19,8 @@ func (client *OtaConnection) Socket2Serial(buffer *bytes.Buffer, connectedPath *
 		logger.WithFields(logger.Fields{"handle": connectedPath.handle, "len": buffer.Len()}).
 			Trace(fmt.Sprintf("flushBuffer: HA-->SE: %s", utils.EncodeToHexEllipsis(buffer.Bytes(), 32)))
 
+		logger.WithFields(logger.Fields{"handle": connectedPath.handle, "len": buffer.Len()}).Info("OtaConnection.Socket2Serial")
+
 		chunks := (buffer.Len()-1)/chunkSize + 1
 		for range chunks {
 			chunk := buffer.Next(chunkSize)
