@@ -182,7 +182,6 @@ func (serialConn *SerialConnection) processSerialBuffer(buffer []byte, bufferPos
 }
 
 func (serialConn *SerialConnection) Read() {
-	var lastStartByte uint8
 	var computedCrc16 uint16
 	var receivedCrc16 uint16
 	var inputBufferPos int
@@ -208,24 +207,10 @@ func (serialConn *SerialConnection) Read() {
 			switch decodeState {
 			case waitStartByte:
 				switch b {
-				case startApiFrame:
-					lastStartByte = b
-					inputBufferPos = 0
-					computedCrc16 = 0
-					decodeState = waitEndByte
 				case startApiFrameCrc16:
-					lastStartByte = b
 					inputBufferPos = 0
 					computedCrc16 = 0
 					decodeState = waitEndByte
-				case startLogMsg:
-					lastStartByte = b
-					inputBufferPos = 0
-					computedCrc16 = 0
-					decodeState = waitEndOfLine
-					inputBuffer[inputBufferPos] = b
-					inputBufferPos += 1
-
 				default:
 					logger.Log().WithField("b", fmt.Sprintf("0x%02X ", b)).Error("serial error: received a character outside a frame")
 				}
@@ -253,15 +238,8 @@ func (serialConn *SerialConnection) Read() {
 			case waitEndByte:
 				switch b {
 				case stopApiFrame:
-					if lastStartByte == startApiFrameCrc16 {
-						// Wait for two more bytes to complete the crc16
-						decodeState = waitCrc16Byte1
-					} else {
-						// No crc16, just process the buffer
-						serialConn.processSerialBuffer(inputBuffer, inputBufferPos)
-						inputBufferPos = 0
-						decodeState = waitStartByte
-					}
+					// Wait for two more bytes to complete the crc16
+					decodeState = waitCrc16Byte1
 				case escapeApiFrame:
 					decodeState = escapeNextByte
 					computedCrc16 = crc16Byte(computedCrc16, b)
@@ -280,27 +258,10 @@ func (serialConn *SerialConnection) Read() {
 					inputBuffer[inputBufferPos] = b
 					inputBufferPos += 1
 				}
-
 			default:
-				switch b {
-				case stopApiFrame:
-					if lastStartByte == startApiFrameCrc16 {
-						// Wait for two more bytes to complete the crc16
-						decodeState = waitCrc16Byte1
-					} else {
-						// No crc16, just process the buffer
-						serialConn.processSerialBuffer(inputBuffer, inputBufferPos)
-						inputBufferPos = 0
-						decodeState = waitStartByte
-					}
-				case escapeApiFrame:
-					decodeState = escapeNextByte
-					computedCrc16 = crc16Byte(computedCrc16, b)
-				default:
-					inputBuffer[inputBufferPos] = b
-					inputBufferPos += 1
-					computedCrc16 = crc16Byte(computedCrc16, b)
-				}
+				logger.Log().WithField("state", decodeState).Error("serial error: unexpected state")
+				decodeState = waitStartByte
+				inputBufferPos = 0
 			}
 
 			if inputBufferPos >= 1500 {

@@ -25,10 +25,8 @@ const (
 
 const (
 	startApiFrameCrc16 byte = 0xFD
-	startApiFrame      byte = 0xFE
 	escapeApiFrame     byte = 0xEA
 	stopApiFrame       byte = 0xEF
-	startLogMsg        byte = 0x1B
 	stopLogMsg         byte = 0x0A
 )
 
@@ -522,7 +520,7 @@ func (frame *ApiFrame) Escape() {
 
 	var escapes = 0
 	for _, b := range frame.data {
-		if b == stopApiFrame || b == startApiFrame || b == escapeApiFrame {
+		if b == stopApiFrame || b == startApiFrameCrc16 || b == escapeApiFrame {
 			escapes += 1
 		}
 	}
@@ -530,7 +528,7 @@ func (frame *ApiFrame) Escape() {
 	var j = 0
 	escaped := make([]byte, len(frame.data)+escapes)
 	for _, b := range frame.data {
-		if b == stopApiFrame || b == startApiFrame || b == escapeApiFrame {
+		if b == stopApiFrame || b == startApiFrameCrc16 || b == escapeApiFrame {
 			escaped[j] = escapeApiFrame
 			j += 1
 		}
