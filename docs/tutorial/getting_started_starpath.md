@@ -55,6 +55,7 @@ esphome:
 
 esp8266:
   board: d1_mini_lite
+  enable_serial: true
   framework:
     version: 3.1.2
 
@@ -75,7 +76,7 @@ meshmesh:
   tx_buffer_size: 4096
   password: !secret meshmesh_password
   channel: 3
-  is_coordinator: True
+  node_type: coordinator
   use_starpath: True
 
 switch:
@@ -110,7 +111,12 @@ external_components:
   - source: github://EspMeshMesh/esphome-meshmesh@main
 
 esphome:
-  name: test-node-1
+  name: test-coordinator
+  friendly_name: Test Coordinator
+  comment: Test Coordinator
+  project:
+    name: EspMeshMesh.MeshMesh Device
+    version: 1.0.0
 
 #esp32:
 #  board: esp32dev
@@ -119,51 +125,41 @@ esphome:
 
 esp8266:
   board: d1_mini_lite
+  enable_serial: true
   framework:
     version: 3.1.2
 
 logger:
   level: VERBOSE
+  baud_rate: 0
 
-mdns:
-  disabled: True
+api:
+  reboot_timeout: 0s
 
 socket:
   #implementation: meshmesh_esp32
   implementation: meshmesh_esp8266
 
 meshmesh:
-  baud_rate: 0
-  rx_buffer_size: 0
-  tx_buffer_size: 0
+  baud_rate: 460800
+  rx_buffer_size: 2048
+  tx_buffer_size: 4096
   password: !secret meshmesh_password
   channel: 3
+  node_type: coordinator
   use_starpath: True
 
-api:
-  reboot_timeout: 0s
+switch:
+  - platform: gpio
+    id: switch_1
+    name: Switch
+    pin: GPIO2
 
-ota:
-  platform: esphome
+mdns:
+  disabled: True
 
 ping:
-  update_interval: 120s
-  address: coordinator
-
-binary_sensor:
-  - platform: ping
-    presence:
-      id: presence
-      name: Host presence
-
-sensor:
-  - platform: uptime
-    name: "Uptime"
-    id: uptime_sensor
-  - platform: ping
-    latency:
-      id: latency
-      name: Ping latency
+  address: server
 ```
 
 Next connect the test node #1 device to the USB port and upload the firmware to this module. 
