@@ -16,7 +16,7 @@ secrets.yaml file to store your passowords
 
 ```yaml
 external_components:
-  - source: github://persuader72/esphome@mm_dev
+  - source: github://EspMeshMesh/esphome-meshmesh@main
     components: [ meshmesh, network, socket ]
 
 esphome:

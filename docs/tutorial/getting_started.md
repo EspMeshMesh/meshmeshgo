@@ -7,7 +7,7 @@
 
 ## List of Software
 
-* **Meshmesh** patched version of **esphome** ([https://github.com/persuader72/esphome](https://github.com/persuader72/esphome))
+* **Meshmesh** patched version of **esphome** ([https://github.com/EspMeshMesh/esphome-meshmesh](https://github.com/EspMeshMesh/esphome-meshmesh))
 * **Meshmeshgo** software HUB for **meshmesh** ([https://github.com/EspMeshMesh/meshmeshgo](https://github.com/EspMeshMesh/meshmeshgo))
 * **Docker** container with a running **Home Assistant** instance
 
@@ -19,7 +19,7 @@ First, compile the following config files using the esphome version patched with
 
 ```yaml
 external_components:
-  - source: github://persuader72/esphome@mm_dev
+  - source: github://EspMeshMesh/esphome-meshmesh@main
     components: [ meshmesh, network, socket ]
 
 esphome:
@@ -64,7 +64,7 @@ Test node #1
 
 ```yaml
 external_components:
-  - source: github://persuader72/esphome@mm_dev
+  - source: github://EspMeshMesh/esphome-meshmesh@main
     components: [ meshmesh, network, socket ]
 
 preferences:
@@ -276,7 +276,7 @@ You can upload a the firmware on new node, the firmware can be based on the foll
 
 ```yaml
 external_components:
-  - source: github://persuader72/esphome@mm_dev
+  - source: github://EspMeshMesh/esphome-meshmesh@main
     components: [ meshmesh, network, socket ]
 
 preferences:

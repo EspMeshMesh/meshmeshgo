@@ -12,17 +12,14 @@ First, we have to use the following config file and upload the firmware to the c
 
 ```yaml
 external_components:
-  - source: github://persuader72/esphome@mm_dev
-    components: [ meshmesh, meshmesh_direct, network, socket, ota ]
+  - source: github://EspMeshMesh/esphome-meshmesh@main
+    components: [ meshmesh, meshmesh_direct, network, socket, esphome ]
 
 preferences:
     flash_write_interval: 30sec
 
 esphome:
   name: controlled
-
-ota:
-  platform: esphome
 
 esp8266:
   board: d1_mini_lite
@@ -60,6 +57,7 @@ switch:
 
 mdns:
   disabled: True
+
 
 ```
 
