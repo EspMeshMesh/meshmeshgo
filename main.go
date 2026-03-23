@@ -83,8 +83,8 @@ func initSerialPort(config *config.Config) *meshmesh.SerialConnection {
 				}
 			}
 			serialPort = nil
-			time.Sleep(500 * time.Millisecond)
 		}
+		time.Sleep(500 * time.Millisecond)
 	}
 	return serialPort
 }
