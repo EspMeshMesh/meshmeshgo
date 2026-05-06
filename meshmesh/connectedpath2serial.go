@@ -1,6 +1,10 @@
 package meshmesh
 
-import "leguru.net/m/v2/logger"
+import (
+	"sync"
+
+	"leguru.net/m/v2/logger"
+)
 
 type ConnectedPathPacketReceivedCallback struct {
 	Handle   uint16
@@ -10,6 +14,7 @@ type ConnectedPathPacketReceivedCallback struct {
 type ConnectedPath2Serial struct {
 	serial                 *SerialConnection
 	packetReceivedCallback []ConnectedPathPacketReceivedCallback
+	packetCallbackMutex    sync.RWMutex
 }
 
 func (conn *ConnectedPath2Serial) handleIncomingFrame(data any) {
@@ -19,7 +24,11 @@ func (conn *ConnectedPath2Serial) handleIncomingFrame(data any) {
 		return
 	}
 
-	for _, callback := range conn.packetReceivedCallback {
+	conn.packetCallbackMutex.RLock()
+	callbacks := append([]ConnectedPathPacketReceivedCallback(nil), conn.packetReceivedCallback...)
+	conn.packetCallbackMutex.RUnlock()
+
+	for _, callback := range callbacks {
 		if callback.Handle == cp.Handle {
 			callback.Callback(&cp)
 			return
@@ -75,13 +84,18 @@ func (conn *ConnectedPath2Serial) TxOneByteMs() int {
 }
 
 func (conn *ConnectedPath2Serial) AddPacketReceivedCallback(handle uint16, callback func(packet *ConnectedPathApiReply)) {
+	conn.packetCallbackMutex.Lock()
+	defer conn.packetCallbackMutex.Unlock()
 	conn.packetReceivedCallback = append(conn.packetReceivedCallback, ConnectedPathPacketReceivedCallback{Handle: handle, Callback: callback})
 }
 
 func (conn *ConnectedPath2Serial) RemovePacketReceivedCallback(handle uint16) {
+	conn.packetCallbackMutex.Lock()
+	defer conn.packetCallbackMutex.Unlock()
 	for i, callback := range conn.packetReceivedCallback {
 		if callback.Handle == handle {
 			conn.packetReceivedCallback = append(conn.packetReceivedCallback[:i], conn.packetReceivedCallback[i+1:]...)
+			return
 		}
 	}
 }
