@@ -22,7 +22,7 @@ import (
 const (
 	programName           = "meshmeshgo"
 	programDescription    = "hub server for meshmesh network"
-	programRevision       = "1.4.5"
+	programRevision       = "1.4.10"
 	graphFilename         = "meshmesh.graphml"
 	starPathGraphFilename = "starpath.graphml"
 )
