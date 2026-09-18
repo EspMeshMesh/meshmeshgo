@@ -2,9 +2,11 @@ package meshmesh
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"leguru.net/m/v2/logger"
 	"leguru.net/m/v2/utils"
 
@@ -102,8 +104,8 @@ func neighborsFromGraph(g *gra.Network, n gra.NodeDevice, w map[int64]discWeight
 		weightFrom, ok := g.Weight(neighbor.ID(), n.ID())
 		if !ok {
 			weightFrom = weightTo
-			logger.WithFields(logger.Fields{"to": gra.FmtDeviceId(neighbor), "weightTo": weightTo, "weightFrom": weightFrom}).
-				Warnf("[%s] Missing return edge", gra.FmtDeviceId(n))
+			logrus.WithFields(logrus.Fields{"to": gra.FmtDeviceId(neighbor), "weightTo": weightTo, "weightFrom": weightFrom}).
+				Warn("Missing return edge")
 		}
 		w[neighbor.ID()] = discWeights{Next: math.Min(weightTo, weightFrom), Current: 1.0}
 	}
@@ -125,7 +127,7 @@ func neighborsToGraph(g *gra.Network, nodeId int64, w map[int64]discWeights) {
 	}
 
 	for id, d := range w {
-		logger.WithFields(logger.Fields{"to": utils.FmtNodeId(id), "weight": d, "exists": g.NodeIdExists(id)}).
+		logrus.WithFields(logrus.Fields{"to": utils.FmtNodeId(id), "weight": d, "exists": g.NodeIdExists(id)}).
 			Infof("[%s] Neighbor to graph", utils.FmtNodeId(nodeId))
 		g.ChangeEdgeWeight(nodeId, id, d.Next, d.Next)
 	}
@@ -153,8 +155,8 @@ func _findNextNode(g *gra.Network) gra.NodeDevice {
 				found_weight = weight
 				found_node = dev
 			}
-			logger.WithFields(logger.Fields{"path": utils.FmtPath2Str(path), "weight": weight, "err": err}).
-				Debugf("[%s] Not discovered node", utils.FmtNodeId(dev.ID()))
+			logrus.WithFields(logrus.Fields{"path": utils.FmtPath2Str(path), "weight": weight, "err": err}).
+				Debug("Not discovered node")
 		}
 	}
 	return found_node
@@ -199,7 +201,7 @@ func (d *DiscoveryProcedure) InitStep() error {
 
 func (d *DiscoveryProcedure) Step() error {
 	protocol := FindBestProtocol(MeshNodeId(d.currentDeviceId), d.network)
-	logger.Log().Printf("[%s] Start discover with protocol %d repetition %d", utils.FmtNodeId(d.currentDeviceId), protocol, d.repeat)
+	logrus.Infof("[%s] Start discover with protocol %d repetition %d", utils.FmtNodeId(d.currentDeviceId), protocol, d.repeat)
 
 	_, err := d.serial.SendReceiveApiProt(DiscResetTableApiRequest{}, protocol, MeshNodeId(d.currentDeviceId), d.network)
 	if err != nil {
@@ -220,7 +222,7 @@ func (d *DiscoveryProcedure) Step() error {
 	if !ok {
 		return errors.New("strcuture is not a NodeGetTagApiReply")
 	} else {
-		logger.Log().Printf("[%s] Tag: %s", utils.FmtNodeId(d.currentDeviceId), tagReply.Tag)
+		logrus.Infof("[%s] Tag: %s", utils.FmtNodeId(d.currentDeviceId), tagReply.Tag)
 	}
 
 	_device, err := d.network.GetNodeDevice(d.currentDeviceId)
@@ -244,7 +246,7 @@ func (d *DiscoveryProcedure) Step() error {
 	}
 
 	_neighborsAdavance(d.Neighbors)
-	logger.Log().Printf("[%s] Discovered nodes: %d", utils.FmtNodeId(d.currentDeviceId), tableSize.Size)
+	logrus.Infof("[%s] Discovered nodes: %d", utils.FmtNodeId(d.currentDeviceId), tableSize.Size)
 	for i := uint8(0); i < tableSize.Size; i++ {
 
 		reply1, err = d.serial.SendReceiveApiProt(DiscTableItemGetApiRequest{Index: i}, protocol, MeshNodeId(d.currentDeviceId), d.network)
@@ -256,7 +258,8 @@ func (d *DiscoveryProcedure) Step() error {
 			return errors.New("comunication error")
 		}
 
-		logger.Log().Printf("         %d: [%s] rssi1 %d rssi2 %d", i, utils.FmtNodeId(int64(tableItem.NodeId)), tableItem.Rssi1, tableItem.Rssi2)
+		logger.WithFields(logger.Fields{"index": i, "node": utils.FmtNodeId(int64(tableItem.NodeId)), "rssi1": tableItem.Rssi1, "rssi2": tableItem.Rssi2}).Info("Discovered node")
+		fmt.Println("Discovered node", i, utils.FmtNodeId(int64(tableItem.NodeId)), tableItem.Rssi1, tableItem.Rssi2)
 		_updateNeighbor(d.Neighbors, int64(tableItem.NodeId), Rssi2weight(tableItem.Rssi1), Rssi2weight(tableItem.Rssi2))
 	}
 	return err
