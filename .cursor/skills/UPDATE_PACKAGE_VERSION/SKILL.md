@@ -1,6 +1,17 @@
+---
+name: update-package-version
+description: Procedure to update and publish new MeshMeshGo revision
+---
 # Procedure to update and publish new MeshMeshGo revision
 
-## Procedure
+Detailed instructions for the agent.
+
+## When to Use
+
+- Use this SKILL when you are asked to create a new MeshMeshGo revision dn publish it on github.
+
+## Instructions
+
 
 1. Wanted revision always has the format v1.2.3 with a leading v
 2. Change `programRevision` constant in main.go to match the wanted revision. Use the numeric version only (no leading `v`), e.g. `1.2.3`.
