@@ -37,6 +37,7 @@ type ConnPathConnection struct {
 	handle                      uint16
 	sequence                    uint16
 	network                     *graph.Network
+	pathHops                    int
 }
 
 func ParseAddress(address string) (MeshNodeId, error) {
@@ -69,6 +70,10 @@ func (client *ConnPathConnection) getNextSequence() uint16 {
 		client.sequence = 1
 	}
 	return client.sequence
+}
+
+func (client *ConnPathConnection) GetPathHops() int {
+	return client.pathHops
 }
 
 func (client *ConnPathConnection) SendData(data []byte) error {
@@ -111,6 +116,10 @@ func (client *ConnPathConnection) OpenConnectionAsync(addr MeshNodeId, port uint
 	for i, item := range _path {
 		path[i] = int32(item)
 	}
+
+	client.pathHops = len(path)
+	logger.WithFields(logger.Fields{"addr": utils.FmtNodeId(int64(addr)), "pathHops": client.pathHops}).
+		Debug("ConnPathConnection.OpenConnectionAsync: path hops determined")
 
 	client.connState = connPathConnectionStateHandshakeStarted
 	err = client.serialProxy.sendOpenConnectionRequest(client.handle, client.getNextSequence(), port, path)
